@@ -1,8 +1,6 @@
-package main.java.com.zky.client;
+package com.zky.client;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.Socket;
 
 public class ClientProxy {
@@ -16,18 +14,26 @@ public class ClientProxy {
 
     public void run() throws Exception{
         clientSocket = new Socket("localhost", 8088);
-        InputStream inputStream = clientSocket.getInputStream();
-        intraSocket = new Socket("localhost", 8080);
-        OutputStream outputStream = intraSocket.getOutputStream();
-        new Intra().start();
+        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+        BufferedWriter bufferedWriter= null;
         while (true){
-            int read = inputStream.read();
-            if(read == -1){
-                break;
+            try {
+                int read = bufferedReader.read();
+                if(read == -1){
+                    break;
+                }
+                if(intraSocket == null || intraSocket.isClosed()){
+                    intraSocket = new Socket("localhost",8080);
+                    OutputStream outputStream = intraSocket.getOutputStream();
+                    bufferedWriter = new BufferedWriter(new OutputStreamWriter(outputStream));
+                    new Intra().start();
+                }
+                System.out.print((char)read);
+                bufferedWriter.write(read);
+                bufferedWriter.flush();
+            }catch (Exception e){
+                e.printStackTrace();
             }
-            System.out.print((char)read);
-            outputStream.write(read);
-            outputStream.flush();
         }
 
     }
@@ -35,21 +41,27 @@ public class ClientProxy {
     public class Intra extends Thread{
         @Override
         public void run() {
-            try {
-                InputStream inputStream = intraSocket.getInputStream();
-                OutputStream outputStream = clientSocket.getOutputStream();
-                while (true){
-                    int read = inputStream.read();
-                    if(read == -1){
-                        break;
+                try {
+                    InputStream inputStream = intraSocket.getInputStream();
+                    OutputStream outputStream = clientSocket.getOutputStream();
+                    while (true){
+                        int read = inputStream.read();
+                        if(read == -1){
+                            break;
+                        }
+                        System.out.print((char) read);
+                        outputStream.write(read);
                     }
-                    System.out.print((char) read);
-                    outputStream.write(read);
                     outputStream.flush();
+                    intraSocket.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    try {
+                        intraSocket.close();
+                    } catch (IOException ioException) {
+                        ioException.printStackTrace();
+                    }
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
             }
-        }
     }
 }

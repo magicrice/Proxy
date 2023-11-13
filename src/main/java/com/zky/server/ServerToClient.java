@@ -1,4 +1,4 @@
-package main.java.com.zky.server;
+package com.zky.server;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -6,13 +6,13 @@ import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-public class ServerToClient extends Thread{
+public class ServerToClient extends Thread {
 
     private Socket clientSocket;
     private OutputStream toOuter;
     private ServerProxy serverProxy;
 
-    public ServerToClient(ServerProxy serverProxy){
+    public ServerToClient(ServerProxy serverProxy) {
         this.serverProxy = serverProxy;
     }
 
@@ -20,13 +20,15 @@ public class ServerToClient extends Thread{
     public void run() {
         try {
             ServerSocket serverSocket = new ServerSocket(8088);
+            System.out.println("服务端已启动，端口：8088");
             new ToOuter().start();
-            while (true){
-                 clientSocket = serverSocket.accept();
+            while (true) {
+                clientSocket = serverSocket.accept();
+                System.out.println("客户端连接:" + clientSocket.getLocalAddress());
 //                 Thread.sleep(10);
-                 if(clientSocket != null){
-                     break;
-                 }
+                if (clientSocket != null) {
+                    break;
+                }
             }
 
         } catch (Exception e) {
@@ -34,43 +36,51 @@ public class ServerToClient extends Thread{
         }
     }
 
-    public void sendToClient(InputStream is, OutputStream os){
+    public void sendToClient(InputStream is, OutputStream os) throws IOException {
         toOuter = os;
-
-        while (true){
+        OutputStream outputStream = clientSocket.getOutputStream();
+        while (true) {
             try {
                 int read = is.read();
-                if(read == -1){
+                if (read == -1) {
                     break;
                 }
-                System.out.print((char)read);
-                clientSocket.getOutputStream().write(read);
-                clientSocket.getOutputStream().flush();
+                if (clientSocket != null) {
+                    System.out.print((char) read);
+                    outputStream.write(read);
+                    outputStream.flush();
+                }
             } catch (IOException e) {
+                clientSocket.close();
                 e.printStackTrace();
             }
         }
     }
 
-    public class ToOuter extends Thread{
+    public class ToOuter extends Thread {
 
         @Override
         public void run() {
-            try {
-                while (true){
-                    if(clientSocket != null){
-                        break;
+            while (true) {
+                try {
+                    if (clientSocket == null || clientSocket.isClosed()) {
+                        try {
+                            Thread.sleep(100);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        continue;
                     }
+                    InputStream inputStream = clientSocket.getInputStream();
+                    while (true) {
+                        int read = inputStream.read();
+                        System.out.print((char) read);
+                        toOuter.write(read);
+                        toOuter.flush();
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
-                InputStream inputStream = clientSocket.getInputStream();
-                while (true){
-                    int read = inputStream.read();
-                    System.out.print((char) read);
-                    toOuter.write(read);
-                    toOuter.flush();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
             }
         }
     }

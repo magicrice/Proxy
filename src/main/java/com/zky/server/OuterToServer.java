@@ -1,4 +1,4 @@
-package main.java.com.zky.server;
+package com.zky.server;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -8,6 +8,7 @@ import java.net.Socket;
 
 public class OuterToServer extends Thread{
     private ServerProxy serverProxy;
+    private ServerSocket outertServerSocket;
 
     public OuterToServer(ServerProxy serverProxy){
         this.serverProxy = serverProxy;
@@ -16,14 +17,27 @@ public class OuterToServer extends Thread{
     @Override
     public void run() {
         try {
-            ServerSocket serverSocket = new ServerSocket(7777);
+            outertServerSocket = new ServerSocket(7777);
             while (true){
-                Socket outerSocket = serverSocket.accept();
+                Socket outerSocket = outertServerSocket.accept();
                 InputStream inputStream = outerSocket.getInputStream();
                 OutputStream outputStream = outerSocket.getOutputStream();
-                serverProxy.sendToClient(inputStream,outputStream);
+                try {
+                    serverProxy.sendToClient(inputStream,outputStream);
+                    outerSocket.close();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                    outerSocket.close();
+                }
             }
-        } catch (IOException | InterruptedException e) {
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    public void close(){
+        try {
+            outertServerSocket.close();
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
