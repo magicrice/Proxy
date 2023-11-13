@@ -1,4 +1,4 @@
-package com.zky.server;
+package main.java.com.zky.server;
 
 import java.io.IOException;
 import java.io.InputStream;
