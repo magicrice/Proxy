@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.UUID;
 
 public class OuterToServer extends Thread{
     private ServerProxy serverProxy;
@@ -20,6 +21,12 @@ public class OuterToServer extends Thread{
             outertServerSocket = new ServerSocket(7777);
             while (true){
                 Socket outerSocket = outertServerSocket.accept();
+
+
+                //发送client请求创建通道
+                String uuid = UUID.randomUUID().toString();
+                serverProxy.create(uuid);
+
                 InputStream inputStream = outerSocket.getInputStream();
                 OutputStream outputStream = outerSocket.getOutputStream();
                 try {

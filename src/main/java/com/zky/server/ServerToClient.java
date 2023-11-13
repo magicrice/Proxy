@@ -8,6 +8,8 @@ import java.net.Socket;
 
 public class ServerToClient extends Thread {
 
+    private ServerSocket serverSocket;
+
     private Socket clientSocket;
     private OutputStream toOuter;
     private ServerProxy serverProxy;
@@ -19,7 +21,7 @@ public class ServerToClient extends Thread {
     @Override
     public void run() {
         try {
-            ServerSocket serverSocket = new ServerSocket(8088);
+            serverSocket = new ServerSocket(8088);
             System.out.println("服务端已启动，端口：8088");
             new ToOuter().start();
             while (true) {
@@ -54,6 +56,14 @@ public class ServerToClient extends Thread {
                 clientSocket.close();
                 e.printStackTrace();
             }
+        }
+    }
+
+    public void close(){
+        try {
+            serverSocket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
