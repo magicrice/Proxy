@@ -4,6 +4,7 @@ package com.zky.server;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.Socket;
 
 public class ServerProxy {
     private ServerToClient serverToClient;
@@ -34,9 +35,9 @@ public class ServerProxy {
             e.printStackTrace();
         }
     }
-    public void sendToClient(InputStream inputStream, OutputStream outputStream)
+    public void sendToClient(Socket socket, String uuid)
             throws IOException, InterruptedException {
-        serverToClient.sendToClient(inputStream, outputStream);
+        serverToClient.sendToClient(socket,uuid);
     }
     public void create(String uuid){
         cmd.create(uuid);

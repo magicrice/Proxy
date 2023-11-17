@@ -27,14 +27,14 @@ public class OuterToServer extends Thread{
                 String uuid = UUID.randomUUID().toString();
                 serverProxy.create(uuid);
 
-                InputStream inputStream = outerSocket.getInputStream();
-                OutputStream outputStream = outerSocket.getOutputStream();
+//                InputStream inputStream = outerSocket.getInputStream();
+//                OutputStream outputStream = outerSocket.getOutputStream();
                 try {
-                    serverProxy.sendToClient(inputStream,outputStream);
-                    outerSocket.close();
+                    serverProxy.sendToClient(outerSocket,uuid);
+//                    outerSocket.close();
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
                     outerSocket.close();
+                    e.printStackTrace();
                 }
             }
         } catch (IOException e) {

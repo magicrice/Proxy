@@ -29,7 +29,6 @@ public class CMD extends Thread{
                     clientSocket = serverSocket.accept();
                     System.out.println("cmd服务客户端已连接");
                 }
-                Thread.sleep(1000);
             }
             serverSocket.close();
         } catch (Exception e) {
@@ -50,6 +49,7 @@ public class CMD extends Thread{
         try {
             BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
             bufferedWriter.write("CREATE-"+uuid);
+            bufferedWriter.newLine();
             bufferedWriter.flush();
         } catch (IOException e) {
             e.printStackTrace();
