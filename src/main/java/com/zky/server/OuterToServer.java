@@ -17,15 +17,17 @@ public class OuterToServer extends Thread{
 
     @Override
     public void run() {
+        System.out.println("线程idOuterToServer-->"+Thread.currentThread().getName()+"->"+Thread.currentThread().getId());
         try {
             outertServerSocket = new ServerSocket(7777);
             while (true){
                 Socket outerSocket = outertServerSocket.accept();
-
+                System.out.println("接收到前端信息");
 
                 //发送client请求创建通道
                 String uuid = UUID.randomUUID().toString();
                 serverProxy.create(uuid);
+                System.out.println("CMD服务发送给客户端指令创建连接");
 
 //                InputStream inputStream = outerSocket.getInputStream();
 //                OutputStream outputStream = outerSocket.getOutputStream();

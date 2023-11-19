@@ -14,7 +14,6 @@ public class ServerToClient extends Thread {
     private Map<String,Socket> clientSocketMap = new ConcurrentHashMap<>();
     private Map<String,Socket> toOuterMap = new ConcurrentHashMap<>();
     private ServerProxy serverProxy;
-    private Socket tmpSocket;
 
     public ServerToClient(ServerProxy serverProxy) {
         this.serverProxy = serverProxy;
@@ -28,8 +27,6 @@ public class ServerToClient extends Thread {
             while (true) {
                 Socket accept = serverSocket.accept();
                 new ToOuter(accept).start();
-
-//                 Thread.sleep(10);
             }
 
         } catch (Exception e) {
@@ -46,25 +43,8 @@ public class ServerToClient extends Thread {
             }
         }
         toOuterMap.put(uuid, socket);
-        InputStream inputStream = socket.getInputStream();
-        OutputStream outputStream = clientSocketMap.get(uuid).getOutputStream();
-        while (true) {
-            try {
-                int read = inputStream.read();
-                if (read == -1) {
-                    break;
-                }
-                if (clientSocketMap.get(uuid) != null) {
-                    System.out.print((char) read);
-                    outputStream.write(read);
-                    outputStream.flush();
-                }
-            } catch (IOException e) {
-                clientSocketMap.get(uuid).close();
-                e.printStackTrace();
-                break;
-            }
-        }
+        System.out.println("目前存在服务端连接请求端通道数量"+toOuterMap.size()+"-->"+toOuterMap.keySet());
+        new SendToClient(uuid).start();
     }
 
     public void close(){
@@ -83,7 +63,7 @@ public class ServerToClient extends Thread {
 
         @Override
         public void run() {
-            System.out.println("客户端连接:" + socket.getLocalAddress());
+            System.out.println("线程idToOuter-->"+Thread.currentThread().getName()+"->"+Thread.currentThread().getId());
             InputStream inputStream = null;
             try {
                 inputStream = socket.getInputStream();
@@ -100,6 +80,7 @@ public class ServerToClient extends Thread {
                     read = inputStream.read();
                 } catch (IOException e) {
                     e.printStackTrace();
+                    break;
                 }
                 if(read == -1){
                     break;
@@ -107,9 +88,10 @@ public class ServerToClient extends Thread {
                 msg.append((char) read);
                 if(msg.toString().startsWith("CREATE")&& msg.toString().endsWith("\n")){
                     //绑定新客户端
-                    uuid = msg.toString().replaceAll("CREATE-", "").replaceAll("\n","");
+                    uuid = msg.toString().replaceAll("CREATE-", "").replaceAll("\n","").replace("\r","");
                     System.out.println("收到创建信息存储通道:"+uuid);
                     clientSocketMap.put(uuid,socket);
+                    System.out.println("目前存在服务端连接客户端通道数量"+clientSocketMap.size()+"-->"+clientSocketMap.keySet());
                     msg = new StringBuilder();
                     isConnect = true;
                 }
@@ -117,26 +99,73 @@ public class ServerToClient extends Thread {
                 if(isConnect){
                     if(outputStream== null){
                         try {
-                            while (toOuterMap.containsKey(uuid)){
+                            while (!toOuterMap.containsKey(uuid)){
                                 try {
                                     Thread.sleep(100);
                                 } catch (InterruptedException e) {
                                     e.printStackTrace();
                                 }
-                                break;
                             }
                             outputStream = toOuterMap.get(uuid).getOutputStream();
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
                     }
-                    System.out.print((char) read);
                     try {
                         outputStream.write(read);
                         outputStream.flush();
                     } catch (IOException e) {
                         e.printStackTrace();
+                        break;
                     }
+                }
+            }
+        }
+    }
+
+
+    public class SendToClient extends Thread{
+        private String uuid;
+        public SendToClient(String uuid){
+            this.uuid = uuid;
+        }
+        @Override
+        public void run() {
+            System.out.println("线程idSendToClient-->"+Thread.currentThread().getName()+"->"+Thread.currentThread().getId());
+            while (!toOuterMap.containsKey(uuid)){
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            System.out.println("发送给客户端前端请求");
+            OutputStream outputStream = null;
+            InputStream inputStream = null;
+            try {
+                inputStream = toOuterMap.get(uuid).getInputStream();
+                outputStream = clientSocketMap.get(uuid).getOutputStream();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            while (true) {
+                try {
+                    int read = inputStream.read();
+                    if (read == -1) {
+                        break;
+                    }
+                    if (clientSocketMap.get(uuid) != null) {
+                        outputStream.write(read);
+                        outputStream.flush();
+                    }
+                } catch (IOException e) {
+                    try {
+                        clientSocketMap.get(uuid).close();
+                    } catch (IOException ioException) {
+                        ioException.printStackTrace();
+                    }
+                    e.printStackTrace();
+                    break;
                 }
             }
         }
