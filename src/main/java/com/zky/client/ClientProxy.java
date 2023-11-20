@@ -40,16 +40,15 @@ public class ClientProxy {
                 try {
                     System.out.println("发送给服务端数据线程:"+Thread.currentThread().getName()+"-->"+uuid);
                     InputStream inputStream = intraSocketMap.get(uuid).getInputStream();
-                    InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
                     OutputStream outputStream = clientSocketMap.get(uuid).getOutputStream();
-                    OutputStreamWriter outputStreamWriter = new OutputStreamWriter(outputStream);
                     while (true) {
-                        int read = inputStreamReader.read();
+                        int read = inputStream.read();
                         if (read == -1) {
                             break;
                         }
-                        outputStreamWriter.write(read);
-                        outputStreamWriter.flush();
+                        System.out.print((char)read);
+                        outputStream.write(read);
+                        outputStream.flush();
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -79,10 +78,7 @@ public class ClientProxy {
                         //请求创建通道
                         create(s);
                     }
-                } catch (ConnectException e) {
-                    e.printStackTrace();
-                    break;
-                } catch (IOException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                     break;
                 }
@@ -133,29 +129,30 @@ public class ClientProxy {
                 }
             }
             System.out.println("开始请求被代理服务器");
-            InputStreamReader inputStreamReader = null;
+            InputStream inputStream = null;
             try {
-                inputStreamReader = new InputStreamReader(clientSocketMap.get(uuid).getInputStream());
+                inputStream = clientSocketMap.get(uuid).getInputStream();
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            OutputStreamWriter outputStreamWriter = null;
+            OutputStream outputStream = null;
             while (true) {
                 try {
-                    int read = inputStreamReader.read();
+                if (!intraSocketMap.containsKey(uuid)) {
+                    Socket intraSocket = new Socket("120.46.189.242", 3306);
+//                    Socket intraSocket = new Socket("localhost", 22);
+//                    Socket intraSocket = new Socket("localhost", 8080);
+                    intraSocketMap.put(uuid, intraSocket);
+                    System.out.println("目前存在代理服务通道数量："+intraSocketMap.size()+"->"+intraSocketMap.keySet());
+                    outputStream = intraSocket.getOutputStream();
+                    new Intra(uuid).start();
+                }
+                    int read = inputStream.read();
                     if (read == -1) {
                         break;
                     }
-                    if (!intraSocketMap.containsKey(uuid)) {
-                        Socket intraSocket = new Socket("localhost", 8080);
-                        intraSocketMap.put(uuid, intraSocket);
-                        System.out.println("目前存在代理服务通道数量："+intraSocketMap.size()+"->"+intraSocketMap.keySet());
-                        OutputStream outputStream = intraSocket.getOutputStream();
-                        outputStreamWriter = new OutputStreamWriter(outputStream);
-                        new Intra(uuid).start();
-                    }
-                    outputStreamWriter.write(read);
-                    outputStreamWriter.flush();
+                    outputStream.write(read);
+                    outputStream.flush();
                 } catch (Exception e) {
                     e.printStackTrace();
                     break;

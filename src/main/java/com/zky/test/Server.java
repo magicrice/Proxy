@@ -16,40 +16,52 @@ public class Server {
 
     public void run(){
         try {
-            new AgainThread().start();
-            new AgainThread().start();
-            new AgainThread().start();
-            new AgainThread().start();
-            new AgainThread().start();
-            new AgainThread().start();
-            new AgainThread().start();
-            new AgainThread().start();
-            new AgainThread().start();
-            new AgainThread().start();
-            new AgainThread().start();
-            new AgainThread().start();
-            ServerSocket serverSocket = new ServerSocket(9999);
-            Socket accept = serverSocket.accept();
+            ServerSocket localhost = new ServerSocket(7777);
+            Socket accept = localhost.accept();
             InputStream inputStream = accept.getInputStream();
-            int i = 0;
             while (true){
-//                try {
-//                    Thread.sleep(1000);
-//                } catch (InterruptedException e) {
-//                    e.printStackTrace();
-//                }
                 int read = inputStream.read();
                 if(read == -1){
                     break;
                 }
-                System.out.println(read);
-                i++;
+                System.out.println((char) read);
             }
-            System.out.println(i);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+
+//    public void run(){
+//        try {
+//            new AgainThread().start();
+//            new AgainThread().start();
+//            new AgainThread().start();
+//            new AgainThread().start();
+//            new AgainThread().start();
+//            new AgainThread().start();
+//            new AgainThread().start();
+//            new AgainThread().start();
+//            new AgainThread().start();
+//            new AgainThread().start();
+//            new AgainThread().start();
+//            new AgainThread().start();
+//            ServerSocket serverSocket = new ServerSocket(9999);
+//            Socket accept = serverSocket.accept();
+//            InputStream inputStream = accept.getInputStream();
+//            int i = 0;
+//            while (true){
+//                int read = inputStream.read();
+//                if(read == -1){
+//                    break;
+//                }
+//                System.out.println(read);
+//                i++;
+//            }
+//            System.out.println(i);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//    }
     public class AgainThread extends Thread{
         @Override
         public void run() {

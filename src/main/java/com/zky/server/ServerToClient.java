@@ -112,6 +112,7 @@ public class ServerToClient extends Thread {
                         }
                     }
                     try {
+                        System.out.print((char) read);
                         outputStream.write(read);
                         outputStream.flush();
                     } catch (IOException e) {
@@ -155,6 +156,7 @@ public class ServerToClient extends Thread {
                         break;
                     }
                     if (clientSocketMap.get(uuid) != null) {
+                        System.out.print((char)read);
                         outputStream.write(read);
                         outputStream.flush();
                     }
