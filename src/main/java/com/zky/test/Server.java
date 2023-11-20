@@ -17,17 +17,51 @@ public class Server {
     public void run(){
         try {
             ServerSocket localhost = new ServerSocket(7777);
-            Socket accept = localhost.accept();
-            InputStream inputStream = accept.getInputStream();
+            outer = localhost.accept();
+            new mysql().start();
+            InputStream inputStream = outer.getInputStream();
             while (true){
                 int read = inputStream.read();
                 if(read == -1){
                     break;
                 }
-                System.out.println((char) read);
+                System.out.print((char) read);
+                outer.getOutputStream().write(read);
+                outer.getOutputStream().flush();
             }
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+    public class mysql extends Thread{
+
+        @Override
+        public void run() {
+            try {
+                if(outer == null || outer.isClosed()){
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+                Socket socket = new Socket("120.46.189.242", 3306);
+                InputStream inputStream = socket.getInputStream();
+                int i = 0;
+                while (true){
+                    int read = inputStream.read();
+                    if(read == -1){
+                        break;
+                    }
+                    System.out.print((char) read);
+                    i++;
+                    outer.getOutputStream().write(read);
+                    outer.getOutputStream().flush();
+                    System.out.println("数量为："+i);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 

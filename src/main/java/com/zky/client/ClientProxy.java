@@ -139,7 +139,8 @@ public class ClientProxy {
             while (true) {
                 try {
                 if (!intraSocketMap.containsKey(uuid)) {
-                    Socket intraSocket = new Socket("120.46.189.242", 3306);
+//                    Socket intraSocket = new Socket("212.129.183.69", 3306); //8.0
+                    Socket intraSocket = new Socket("120.46.189.242", 3306);//5.7
 //                    Socket intraSocket = new Socket("localhost", 22);
 //                    Socket intraSocket = new Socket("localhost", 8080);
                     intraSocketMap.put(uuid, intraSocket);

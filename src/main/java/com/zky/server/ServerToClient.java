@@ -94,6 +94,7 @@ public class ServerToClient extends Thread {
                     System.out.println("目前存在服务端连接客户端通道数量"+clientSocketMap.size()+"-->"+clientSocketMap.keySet());
                     msg = new StringBuilder();
                     isConnect = true;
+                    continue;
                 }
 
                 if(isConnect){
@@ -155,8 +156,8 @@ public class ServerToClient extends Thread {
                     if (read == -1) {
                         break;
                     }
-                    if (clientSocketMap.get(uuid) != null) {
-                        System.out.print((char)read);
+                    if (outputStream != null) {
+//                        System.out.print((char)read);
                         outputStream.write(read);
                         outputStream.flush();
                     }
