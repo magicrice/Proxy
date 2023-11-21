@@ -3,11 +3,13 @@ package com.zky.server;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 public class ServerToClient extends Thread {
 
@@ -29,6 +31,16 @@ public class ServerToClient extends Thread {
                 return;
             }
         });
+        Set<String> strings = clientSocketMap.keySet();
+        Set<String> collect = strings.stream().filter(a -> !uuidSet.contains(a)).skip(5).collect(Collectors.toSet());
+        for (String s : collect) {
+            try {
+                clientSocketMap.get(s).close();
+                clientSocketMap.remove(s);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
         uuidSet.add(uuid.get());
         return uuid.get();
     }
@@ -48,7 +60,7 @@ public class ServerToClient extends Thread {
         }
     }
 
-    public void sendToClient(Socket socket,String uuid) throws IOException {
+    public void sendToClient(Socket socket,String uuid) {
         while (!clientSocketMap.containsKey(uuid) ){
             try {
                 Thread.sleep(100);
@@ -64,6 +76,13 @@ public class ServerToClient extends Thread {
     public void close(){
         try {
             serverSocket.close();
+            clientSocketMap.forEach((a,b)->{
+                try {
+                    b.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
         } catch (IOException e) {
             e.printStackTrace();
         }
