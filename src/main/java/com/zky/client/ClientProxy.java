@@ -1,17 +1,12 @@
 package com.zky.client;
 
 import java.io.*;
-import java.net.ConnectException;
 import java.net.Socket;
-import java.net.SocketException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ClientProxy {
-    //    Socket clientSocket;
     Socket cmdSocket;
-    //    Socket intraSocket;
     Map<String, Socket> clientSocketMap = new ConcurrentHashMap<>();
     Map<String, Socket> intraSocketMap = new ConcurrentHashMap<>();
 
@@ -26,6 +21,9 @@ public class ClientProxy {
         cmdClient.join();
     }
 
+    /**
+     * 写给服务端
+     */
     public class Intra extends Thread {
         private String uuid;
 
@@ -44,9 +42,9 @@ public class ClientProxy {
                     while (true) {
                         int read = inputStream.read();
                         if (read == -1) {
+                            intraSocketMap.remove(uuid);
                             break;
                         }
-                        System.out.print((char)read);
                         outputStream.write(read);
                         outputStream.flush();
                     }
@@ -57,6 +55,9 @@ public class ClientProxy {
         }
     }
 
+    /**
+     * 连接cmd服务端
+     */
     public class CmdClient extends Thread {
         @Override
         public void run() {
@@ -107,6 +108,9 @@ public class ClientProxy {
         }
     }
 
+    /**
+     * 请求被代理服务
+     */
     public class TerminalClient extends Thread {
         private String uuid;
 
@@ -140,9 +144,9 @@ public class ClientProxy {
                 try {
                 if (!intraSocketMap.containsKey(uuid)) {
 //                    Socket intraSocket = new Socket("212.129.183.69", 3306); //8.0
-                    Socket intraSocket = new Socket("120.46.189.242", 3306);//5.7
+//                    Socket intraSocket = new Socket("120.46.189.242", 3306);//5.7
 //                    Socket intraSocket = new Socket("localhost", 22);
-//                    Socket intraSocket = new Socket("localhost", 8080);
+                    Socket intraSocket = new Socket("localhost", 8080);
                     intraSocketMap.put(uuid, intraSocket);
                     System.out.println("目前存在代理服务通道数量："+intraSocketMap.size()+"->"+intraSocketMap.keySet());
                     outputStream = intraSocket.getOutputStream();
@@ -150,6 +154,8 @@ public class ClientProxy {
                 }
                     int read = inputStream.read();
                     if (read == -1) {
+                        System.out.println("服务端流关闭");
+                        clientSocketMap.remove(uuid);
                         break;
                     }
                     outputStream.write(read);
@@ -160,6 +166,7 @@ public class ClientProxy {
                 }
             }
         }
+
     }
 
 }

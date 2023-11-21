@@ -79,7 +79,7 @@ public class ServerToClient extends Thread {
                 try {
                     read = inputStream.read();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    System.out.println("流关闭");
                     break;
                 }
                 if(read == -1){
@@ -113,7 +113,6 @@ public class ServerToClient extends Thread {
                         }
                     }
                     try {
-                        System.out.print((char) read);
                         outputStream.write(read);
                         outputStream.flush();
                     } catch (IOException e) {
@@ -154,10 +153,14 @@ public class ServerToClient extends Thread {
                 try {
                     int read = inputStream.read();
                     if (read == -1) {
+                        System.out.println("前端流关闭");
+                        toOuterMap.remove(uuid);
+                        //关闭客户端服务端流
+                        clientSocketMap.get(uuid).close();
+                        clientSocketMap.remove(uuid);
                         break;
                     }
                     if (outputStream != null) {
-//                        System.out.print((char)read);
                         outputStream.write(read);
                         outputStream.flush();
                     }
