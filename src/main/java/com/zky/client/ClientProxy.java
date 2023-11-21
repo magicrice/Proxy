@@ -11,12 +11,13 @@ public class ClientProxy {
     Map<String, Socket> intraSocketMap = new ConcurrentHashMap<>();
 
     public static void main(String[] args) throws Exception {
-        new ClientProxy().run();
+        String port = "7777";
+        new ClientProxy().run(port);
 
     }
 
-    public void run() throws Exception {
-        CmdClient cmdClient = new CmdClient();
+    public void run(String port) throws Exception {
+        CmdClient cmdClient = new CmdClient(port);
         cmdClient.start();
         cmdClient.join();
     }
@@ -46,6 +47,7 @@ public class ClientProxy {
                             intraSocketMap.remove(uuid);
                             break;
                         }
+                        System.out.print((char) read);
                         outputStream.write(read);
                         outputStream.flush();
                     }
@@ -60,6 +62,10 @@ public class ClientProxy {
      * 连接cmd服务端
      */
     public class CmdClient extends Thread {
+        private String port;
+        public CmdClient(String port){
+            this.port = port;
+        }
         @Override
         public void run() {
             System.out.println("线程idCmdClient-->"+Thread.currentThread().getName()+"->"+Thread.currentThread().getId());
@@ -68,6 +74,11 @@ public class ClientProxy {
                     if(cmdSocket == null || cmdSocket.isClosed()){
                         cmdSocket = new Socket("localhost", 9099);
                     }
+                    OutputStream outputStream = cmdSocket.getOutputStream();
+                    BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(outputStream));
+                    bufferedWriter.write("PORT-"+port);
+                    bufferedWriter.newLine();
+                    bufferedWriter.flush();
                     InputStream inputStream = cmdSocket.getInputStream();
                     BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
                     String s = bufferedReader.readLine();
@@ -143,22 +154,24 @@ public class ClientProxy {
             OutputStream outputStream = null;
             while (true) {
                 try {
-                if (!intraSocketMap.containsKey(uuid)) {
-//                    Socket intraSocket = new Socket("212.129.183.69", 3306); //8.0
-                    Socket intraSocket = new Socket("120.46.189.242", 3306);//5.7
-//                    Socket intraSocket = new Socket("localhost", 22);
-//                    Socket intraSocket = new Socket("localhost", 8080);
-                    intraSocketMap.put(uuid, intraSocket);
-                    System.out.println("目前存在代理服务通道数量："+intraSocketMap.size()+"->"+intraSocketMap.keySet());
-                    outputStream = intraSocket.getOutputStream();
-                    new ClientToServer(uuid).start();
-                }
                     int read = inputStream.read();
                     if (read == -1) {
                         System.out.println("服务端流关闭");
                         clientSocketMap.remove(uuid);
                         break;
                     }
+
+                    if (!intraSocketMap.containsKey(uuid)) {
+//                    Socket intraSocket = new Socket("212.129.183.69", 3306); //8.0
+//                    Socket intraSocket = new Socket("120.46.189.242", 3306);//5.7
+//                    Socket intraSocket = new Socket("localhost", 22);
+                        Socket intraSocket = new Socket("localhost", 8080);
+                        intraSocketMap.put(uuid, intraSocket);
+                        System.out.println("目前存在代理服务通道数量："+intraSocketMap.size()+"->"+intraSocketMap.keySet());
+                        outputStream = intraSocket.getOutputStream();
+                        new ClientToServer(uuid).start();
+                    }
+                    System.out.print((char) read);
                     outputStream.write(read);
                     outputStream.flush();
                 } catch (Exception e) {

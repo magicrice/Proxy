@@ -23,11 +23,9 @@ public class ServerProxy {
         cmd = new CMD(this);
 
         serverToClient.start();
-        outerToServer.start();
         cmd.start();
         try {
             serverToClient.join();
-            outerToServer.join();
             cmd.join();
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -37,17 +35,21 @@ public class ServerProxy {
             throws IOException, InterruptedException {
         serverToClient.sendToClient(socket,uuid);
     }
-    public void create(String uuid){
-        cmd.create(uuid);
+    public void create(String port,String uuid){
+        cmd.create(port,uuid);
     }
-    public String lockSocket(){
-        return serverToClient.lockSocket();
+    public String lockSocket(String port){
+        return serverToClient.lockSocket(port);
+    }
+
+    public void createOuter(String port) {
+        outerToServer.createOuter(port);
     }
 
     public void close(){
         serverToClient.close();
-        outerToServer.close();
         cmd.close();
         isClosed = true;
     }
+
 }

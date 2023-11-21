@@ -23,10 +23,10 @@ public class ServerToClient extends Thread {
     public ServerToClient(ServerProxy serverProxy) {
         this.serverProxy = serverProxy;
     }
-    public String lockSocket(){
+    public String lockSocket(String port){
         AtomicReference<String> uuid = new AtomicReference<>("");
         clientSocketMap.forEach((a,b)->{
-            if (!uuidSet.contains(a)) {
+            if (!uuidSet.contains(a) && a.startsWith(port)) {
                 uuid.set(a);
                 return;
             }
@@ -112,6 +112,7 @@ public class ServerToClient extends Thread {
                 try {
                     read = inputStream.read();
                 } catch (IOException e) {
+                    e.printStackTrace();
                     System.out.println("流关闭");
                     break;
                 }
@@ -131,7 +132,7 @@ public class ServerToClient extends Thread {
                 }
 
                 if(isConnect){
-                    if(outputStream== null){
+//                    if(outputStream== null){
                         try {
                             while (!toOuterMap.containsKey(uuid)){
                                 try {
@@ -144,8 +145,9 @@ public class ServerToClient extends Thread {
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
-                    }
+//                    }
                     try {
+                        System.out.print((char) read);
                         outputStream.write(read);
                         outputStream.flush();
                     } catch (IOException e) {
@@ -193,6 +195,7 @@ public class ServerToClient extends Thread {
                         break;
                     }
                     if (outputStream != null) {
+                        System.out.print((char) read);
                         outputStream.write(read);
                         outputStream.flush();
                     }
