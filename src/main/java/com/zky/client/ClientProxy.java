@@ -42,6 +42,7 @@ public class ClientProxy {
                     while (true) {
                         int read = inputStream.read();
                         if (read == -1) {
+                            System.out.println("被代理服务流关闭");
                             intraSocketMap.remove(uuid);
                             break;
                         }
@@ -144,9 +145,9 @@ public class ClientProxy {
                 try {
                 if (!intraSocketMap.containsKey(uuid)) {
 //                    Socket intraSocket = new Socket("212.129.183.69", 3306); //8.0
-//                    Socket intraSocket = new Socket("120.46.189.242", 3306);//5.7
+                    Socket intraSocket = new Socket("120.46.189.242", 3306);//5.7
 //                    Socket intraSocket = new Socket("localhost", 22);
-                    Socket intraSocket = new Socket("localhost", 8080);
+//                    Socket intraSocket = new Socket("localhost", 8080);
                     intraSocketMap.put(uuid, intraSocket);
                     System.out.println("目前存在代理服务通道数量："+intraSocketMap.size()+"->"+intraSocketMap.keySet());
                     outputStream = intraSocket.getOutputStream();
