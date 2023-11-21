@@ -4,19 +4,33 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class ServerToClient extends Thread {
 
     private ServerSocket serverSocket;
 
-//    private Socket clientSocket;
     private Map<String,Socket> clientSocketMap = new ConcurrentHashMap<>();
+    private Set<String> uuidSet = new CopyOnWriteArraySet<>();
     private Map<String,Socket> toOuterMap = new ConcurrentHashMap<>();
     private ServerProxy serverProxy;
 
     public ServerToClient(ServerProxy serverProxy) {
         this.serverProxy = serverProxy;
+    }
+    public String lockSocket(){
+        AtomicReference<String> uuid = new AtomicReference<>("");
+        clientSocketMap.forEach((a,b)->{
+            if (!uuidSet.contains(a)) {
+                uuid.set(a);
+                return;
+            }
+        });
+        uuidSet.add(uuid.get());
+        return uuid.get();
     }
 
     @Override
@@ -116,7 +130,7 @@ public class ServerToClient extends Thread {
                         outputStream.write(read);
                         outputStream.flush();
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        System.out.println(e.getMessage());
                         break;
                     }
                 }
@@ -155,9 +169,8 @@ public class ServerToClient extends Thread {
                     if (read == -1) {
                         System.out.println("前端流关闭");
                         toOuterMap.remove(uuid);
+                        uuidSet.remove(uuid);
                         //关闭客户端服务端流
-                        clientSocketMap.get(uuid).close();
-                        clientSocketMap.remove(uuid);
                         break;
                     }
                     if (outputStream != null) {

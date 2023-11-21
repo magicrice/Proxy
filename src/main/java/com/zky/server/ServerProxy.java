@@ -42,6 +42,9 @@ public class ServerProxy {
     public void create(String uuid){
         cmd.create(uuid);
     }
+    public String lockSocket(){
+        return serverToClient.lockSocket();
+    }
 
     public void close(){
         serverToClient.close();
