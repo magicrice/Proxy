@@ -24,10 +24,10 @@ public class ClientProxy {
     /**
      * 写给服务端
      */
-    public class Intra extends Thread {
+    public class ClientToServer extends Thread {
         private String uuid;
 
-        public Intra(String uuid) {
+        public ClientToServer(String uuid) {
             this.uuid = uuid;
         }
 
@@ -76,7 +76,7 @@ public class ClientProxy {
                         //创建终端通道并发送信息
                         s = s.replaceAll("CREATE-", "").replaceAll("\n", "").replaceAll("\r","");
                         System.out.println("创建通道");
-                        new TerminalClient(s).start();
+                        new ClientToIntra(s).start();
                         //请求创建通道
                         create(s);
                     }
@@ -112,10 +112,10 @@ public class ClientProxy {
     /**
      * 请求被代理服务
      */
-    public class TerminalClient extends Thread {
+    public class ClientToIntra extends Thread {
         private String uuid;
 
-        public TerminalClient(String uuid) {
+        public ClientToIntra(String uuid) {
             this.uuid = uuid;
         }
 
@@ -151,7 +151,7 @@ public class ClientProxy {
                     intraSocketMap.put(uuid, intraSocket);
                     System.out.println("目前存在代理服务通道数量："+intraSocketMap.size()+"->"+intraSocketMap.keySet());
                     outputStream = intraSocket.getOutputStream();
-                    new Intra(uuid).start();
+                    new ClientToServer(uuid).start();
                 }
                     int read = inputStream.read();
                     if (read == -1) {

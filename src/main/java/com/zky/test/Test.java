@@ -16,28 +16,6 @@ public class Test {
         for (String s : collect) {
             System.out.println(s);
         }
-
-    }
-    public void aa(){
-        TT tt = new TT();
-        tt.start();
-        try {
-            tt.join();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
     }
 
-    public class TT extends Thread{
-
-        @Override
-        public void run() {
-            System.out.println(Thread.currentThread().getName()+"已运行");
-        }
-
-        @Override
-        public void destroy() {
-            System.out.println(Thread.currentThread().getName()+"已销毁");
-        }
-    }
 }
