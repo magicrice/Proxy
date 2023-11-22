@@ -68,9 +68,9 @@ public class CMD extends Thread{
                 InputStream inputStream = socket.getInputStream();
                 BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
                 String s = bufferedReader.readLine();
+                System.out.println("要建立的端口"+s);
                 if(s.startsWith("PORT")){
                     String[] split = s.split("-");
-                    synchronized (ClientCmd.class){
                         String port = split[1].replaceAll("\n", "").replaceAll("\r", "");
                         if(clientSocketMap.containsKey(port)){
                             //端口已被占用
@@ -81,9 +81,9 @@ public class CMD extends Thread{
                         }else {
                             clientSocketMap.put(port,socket);
                             //创建外部服务
+                            System.out.println("创建外部服务");
                             serverProxy.createOuter(port);
                         }
-                    }
                 }
             } catch (IOException e) {
                 e.printStackTrace();

@@ -22,21 +22,20 @@ public class OuterToServer {
         System.out.println("线程idOuterToServer-->" + Thread.currentThread().getName() + "->" + Thread.currentThread().getId());
         try {
             ServerSocket serverSocket = new ServerSocket(Integer.parseInt(port));
-            outerServerSocketMap.put(port,serverSocket);
+            System.out.println("端口");
+            outerServerSocketMap.put(port, serverSocket);
             System.out.println(outerServerSocketMap.keySet());
             while (true) {
                 Socket outerSocket = serverSocket.accept();
                 System.out.println("接收到前端信息");
 
                 String uuid = "";
-                synchronized (this) {
-                    uuid = serverProxy.lockSocket(port);
-                    if (uuid == null || "".equals(uuid)) {
-                        //发送client请求创建通道
-                        uuid = port + UUID.randomUUID().toString();
-                        serverProxy.create(port, uuid);
-                        System.out.println("CMD服务发送给客户端指令创建连接");
-                    }
+                uuid = serverProxy.lockSocket(port);
+                if (uuid == null || "".equals(uuid)) {
+                    //发送client请求创建通道
+                    uuid = port + UUID.randomUUID().toString();
+                    serverProxy.create(port, uuid);
+                    System.out.println("CMD服务发送给客户端指令创建连接");
                 }
                 try {
                     serverProxy.sendToClient(outerSocket, uuid);
@@ -49,16 +48,4 @@ public class OuterToServer {
             e.printStackTrace();
         }
     }
-
-    public class OuterToServerBatch extends Thread {
-        private String port;
-
-        public OuterToServerBatch(String port) {
-            this.port = port;
-        }
-
-        @Override
-        public void run() {}
-    }
-
 }

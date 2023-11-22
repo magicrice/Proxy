@@ -9,10 +9,13 @@ public class ClientProxy {
     Socket cmdSocket;
     Map<String, Socket> clientSocketMap = new ConcurrentHashMap<>();
     Map<String, Socket> intraSocketMap = new ConcurrentHashMap<>();
+    private static String ip = "localhost";
+    private static String port = "8080";
+    private static String reflectPort = "7777";
+    private static String serverIp = "localhost";
 
     public static void main(String[] args) throws Exception {
-        String port = "7777";
-        new ClientProxy().run(port);
+        new ClientProxy().run(reflectPort);
 
     }
 
@@ -72,7 +75,7 @@ public class ClientProxy {
             while (true) {
                 try {
                     if(cmdSocket == null || cmdSocket.isClosed()){
-                        cmdSocket = new Socket("localhost", 9099);
+                        cmdSocket = new Socket(serverIp, 9099);
                     }
                     OutputStream outputStream = cmdSocket.getOutputStream();
                     BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(outputStream));
@@ -91,6 +94,11 @@ public class ClientProxy {
                         //请求创建通道
                         create(s);
                     }
+                    if(s.startsWith("ERROR")){
+                        //报错
+                        s = s.replaceAll("ERROR-", "").replaceAll("\n", "").replaceAll("\r","");
+                        System.out.println(s);
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
                     break;
@@ -101,7 +109,7 @@ public class ClientProxy {
 
     public void create(String uuid) {
         try {
-            Socket newSocket = new Socket("localhost", 8088);
+            Socket newSocket = new Socket(serverIp, 8088);
             System.out.println("创建通道完成");
             System.out.println(uuid);
             clientSocketMap.put(uuid, newSocket);
@@ -154,23 +162,27 @@ public class ClientProxy {
             OutputStream outputStream = null;
             while (true) {
                 try {
+                    if (!intraSocketMap.containsKey(uuid)) {
+                        Socket intraSocket = new Socket(ip, Integer.parseInt(port));
+                        intraSocketMap.put(uuid, intraSocket);
+                        System.out.println("目前存在代理服务通道数量："+intraSocketMap.size()+"->"+intraSocketMap.keySet());
+                        outputStream = intraSocket.getOutputStream();
+                        new ClientToServer(uuid).start();
+                    }
                     int read = inputStream.read();
                     if (read == -1) {
                         System.out.println("服务端流关闭");
                         clientSocketMap.remove(uuid);
                         break;
                     }
-
                     if (!intraSocketMap.containsKey(uuid)) {
-//                    Socket intraSocket = new Socket("212.129.183.69", 3306); //8.0
-//                    Socket intraSocket = new Socket("120.46.189.242", 3306);//5.7
-//                    Socket intraSocket = new Socket("localhost", 22);
-                        Socket intraSocket = new Socket("localhost", 8080);
+                        Socket intraSocket = new Socket(ip, Integer.parseInt(port));
                         intraSocketMap.put(uuid, intraSocket);
                         System.out.println("目前存在代理服务通道数量："+intraSocketMap.size()+"->"+intraSocketMap.keySet());
                         outputStream = intraSocket.getOutputStream();
                         new ClientToServer(uuid).start();
                     }
+
                     System.out.print((char) read);
                     outputStream.write(read);
                     outputStream.flush();
