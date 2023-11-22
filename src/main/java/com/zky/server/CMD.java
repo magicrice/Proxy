@@ -87,11 +87,15 @@ public class CMD extends Thread{
                             serverProxy.createOuter(port);
                         }
                 }
-            }catch (SocketException e){
-                //断线，清除通道
-                serverProxy.clearSocket(port);
             }catch (IOException e) {
-                e.printStackTrace();
+                //断线，清除通道
+                try {
+                    socket.close();
+                    clientSocketMap.remove(port);
+                } catch (IOException ioException) {
+                    ioException.printStackTrace();
+                }
+                serverProxy.clearSocket(port);
             }
         }
     }
