@@ -54,5 +54,7 @@ public class ServerProxy {
 
     public void clearSocket(String port) {
         serverToClient.clearSocket(port);
+        outerToServer.clearSocket(port);
     }
+
 }

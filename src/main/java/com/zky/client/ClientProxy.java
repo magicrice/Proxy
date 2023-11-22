@@ -12,11 +12,13 @@ public class ClientProxy {
     Map<String,Socket> cmdSocketMap = new ConcurrentHashMap<>();
     Map<String, Socket> clientSocketMap = new ConcurrentHashMap<>();
     Map<String, Socket> intraSocketMap = new ConcurrentHashMap<>();
+//    private static String serverIp = "120.46.189.242";
     private static String serverIp = "localhost";
     private static List<String> list = new ArrayList<>();
     static {
-        list.add("localhost:8080->7777");
-        list.add("120.46.189.242:3306->9999");
+        list.add("localhost:3389->7777");
+//        list.add("localhost:8080->7777");
+//        list.add("120.46.189.242:3306->9999");
     }
     private static Integer reConnectTime=5;
 
@@ -99,12 +101,12 @@ public class ClientProxy {
                     if(!cmdSocketMap.containsKey(reflectPort) || cmdSocketMap.get(reflectPort).isClosed()){
                         Socket cmdSocket = new Socket(serverIp, 9099);
                         cmdSocketMap.put(reflectPort,cmdSocket);
+                        OutputStream outputStream = cmdSocketMap.get(reflectPort).getOutputStream();
+                        BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(outputStream));
+                        bufferedWriter.write("PORT-"+reflectPort);
+                        bufferedWriter.newLine();
+                        bufferedWriter.flush();
                     }
-                    OutputStream outputStream = cmdSocketMap.get(reflectPort).getOutputStream();
-                    BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(outputStream));
-                    bufferedWriter.write("PORT-"+reflectPort);
-                    bufferedWriter.newLine();
-                    bufferedWriter.flush();
                     InputStream inputStream = cmdSocketMap.get(reflectPort).getInputStream();
                     BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
                     String s = bufferedReader.readLine();

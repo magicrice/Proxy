@@ -67,13 +67,14 @@ public class CMD extends Thread{
         @Override
         public void run() {
             try {
-                InputStream inputStream = socket.getInputStream();
-                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-                String s = bufferedReader.readLine();
-                System.out.println("要建立的端口"+s);
-                if(s.startsWith("PORT")){
-                    String[] split = s.split("-");
+                while (true){
+                    InputStream inputStream = socket.getInputStream();
+                    BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
+                    String s = bufferedReader.readLine();
+                    if(s.startsWith("PORT")){
+                        String[] split = s.split("-");
                         port = split[1].replaceAll("\n", "").replaceAll("\r", "");
+                        System.out.println("要建立的端口"+port);
                         if(clientSocketMap.containsKey(port)){
                             //端口已被占用
                             BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
@@ -84,10 +85,13 @@ public class CMD extends Thread{
                             clientSocketMap.put(port,socket);
                             //创建外部服务
                             System.out.println("创建外部服务");
-                            serverProxy.createOuter(port);
+                            new Thread(()->{
+                                serverProxy.createOuter(port);
+                            }).start();
                         }
+                    }
                 }
-            }catch (IOException e) {
+            }catch (Exception e) {
                 //断线，清除通道
                 try {
                     socket.close();

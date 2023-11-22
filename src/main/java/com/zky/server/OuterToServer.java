@@ -48,4 +48,12 @@ public class OuterToServer {
             e.printStackTrace();
         }
     }
+
+    public void clearSocket(String port){
+        try {
+            outerServerSocketMap.get(port).close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }
