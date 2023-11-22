@@ -14,6 +14,7 @@ public class ClientProxy {
     private static String port = "8080";
     private static String reflectPort = "7777";
     private static String serverIp = "localhost";
+    private static Integer reConnectTime=5;
 
     public static void main(String[] args) throws Exception {
         new ClientProxy().run(reflectPort);
@@ -73,8 +74,12 @@ public class ClientProxy {
         @Override
         public void run() {
             System.out.println("线程idCmdClient-->"+Thread.currentThread().getName()+"->"+Thread.currentThread().getId());
+            int num = 0;
             while (true) {
                 try {
+                    if(num > reConnectTime){
+                        break;
+                    }
                     if(cmdSocket == null || cmdSocket.isClosed()){
                         cmdSocket = new Socket(serverIp, 9099);
                     }
@@ -100,8 +105,10 @@ public class ClientProxy {
                         s = s.replaceAll("ERROR-", "").replaceAll("\n", "").replaceAll("\r","");
                         System.out.println(s);
                     }
+                    num = 0;
                 } catch (Exception e) {
                     e.printStackTrace();
+                    num++;
                     try {
                         cmdSocket.close();
                     } catch (IOException ioException) {
