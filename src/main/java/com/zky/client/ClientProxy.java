@@ -3,28 +3,40 @@ package com.zky.client;
 import javax.swing.table.TableRowSorter;
 import java.io.*;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ClientProxy {
-    Socket cmdSocket;
+    Map<String,Socket> cmdSocketMap = new ConcurrentHashMap<>();
     Map<String, Socket> clientSocketMap = new ConcurrentHashMap<>();
     Map<String, Socket> intraSocketMap = new ConcurrentHashMap<>();
-    private static String ip = "localhost";
-    private static String port = "8080";
-    private static String reflectPort = "7777";
     private static String serverIp = "localhost";
+    private static List<String> list = new ArrayList<>();
+    static {
+        list.add("localhost:8080->7777");
+        list.add("120.46.189.242:3306->9999");
+    }
     private static Integer reConnectTime=5;
 
     public static void main(String[] args) throws Exception {
-        new ClientProxy().run(reflectPort);
-
+        new ClientProxy().run(list);
     }
 
-    public void run(String port) throws Exception {
-        CmdClient cmdClient = new CmdClient(port);
-        cmdClient.start();
-        cmdClient.join();
+    public void run(List<String> list) throws Exception {
+        List<CmdClient> cmdClients = new ArrayList<>();
+        for (String s : list) {
+            String[] split = s.split("->");
+            String[] split1 = split[0].split(":");
+            CmdClient cmdClient = new CmdClient(split[1],split1[0],split1[1]);
+            cmdClient.start();
+            cmdClients.add(cmdClient);
+            Thread.sleep(1000);
+        }
+        for (CmdClient cmdClient : cmdClients) {
+            cmdClient.join();
+        }
     }
 
     /**
@@ -67,8 +79,12 @@ public class ClientProxy {
      * 连接cmd服务端
      */
     public class CmdClient extends Thread {
+        private String reflectPort;
+        private String ip;
         private String port;
-        public CmdClient(String port){
+        public CmdClient(String reflectPort,String ip,String port){
+            this.reflectPort = reflectPort;
+            this.ip = ip;
             this.port = port;
         }
         @Override
@@ -80,15 +96,16 @@ public class ClientProxy {
                     if(num > reConnectTime){
                         break;
                     }
-                    if(cmdSocket == null || cmdSocket.isClosed()){
-                        cmdSocket = new Socket(serverIp, 9099);
+                    if(!cmdSocketMap.containsKey(reflectPort) || cmdSocketMap.get(reflectPort).isClosed()){
+                        Socket cmdSocket = new Socket(serverIp, 9099);
+                        cmdSocketMap.put(reflectPort,cmdSocket);
                     }
-                    OutputStream outputStream = cmdSocket.getOutputStream();
+                    OutputStream outputStream = cmdSocketMap.get(reflectPort).getOutputStream();
                     BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(outputStream));
-                    bufferedWriter.write("PORT-"+port);
+                    bufferedWriter.write("PORT-"+reflectPort);
                     bufferedWriter.newLine();
                     bufferedWriter.flush();
-                    InputStream inputStream = cmdSocket.getInputStream();
+                    InputStream inputStream = cmdSocketMap.get(reflectPort).getInputStream();
                     BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
                     String s = bufferedReader.readLine();
                     System.out.println(s);
@@ -96,7 +113,7 @@ public class ClientProxy {
                         //创建终端通道并发送信息
                         s = s.replaceAll("CREATE-", "").replaceAll("\n", "").replaceAll("\r","");
                         System.out.println("创建通道");
-                        new ClientToIntra(s).start();
+                        new ClientToIntra(s,ip,port).start();
                         //请求创建通道
                         create(s);
                     }
@@ -110,7 +127,10 @@ public class ClientProxy {
                     e.printStackTrace();
                     num++;
                     try {
-                        cmdSocket.close();
+                        if(cmdSocketMap.containsKey(port)){
+                            cmdSocketMap.get(port).close();
+                            cmdSocketMap.remove(port);
+                        }
                     } catch (IOException ioException) {
                         ioException.printStackTrace();
                     }
@@ -150,9 +170,13 @@ public class ClientProxy {
      */
     public class ClientToIntra extends Thread {
         private String uuid;
+        private String ip;
+        private String port;
 
-        public ClientToIntra(String uuid) {
+        public ClientToIntra(String uuid,String ip,String port) {
             this.uuid = uuid;
+            this.ip = ip;
+            this.port = port;
         }
 
         @Override
