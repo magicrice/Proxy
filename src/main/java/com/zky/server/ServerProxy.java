@@ -1,33 +1,34 @@
 package com.zky.server;
 
 
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
 public class ServerProxy {
-    private ServerToClient serverToClient;
-    private OuterToServer outerToServer;
 
-    public static void main(String[] args) throws IOException {
-        new ServerProxy().run();
-    }
+    public static void main(String[] args)  {
+        NioEventLoopGroup parentGroup = new NioEventLoopGroup();
+        NioEventLoopGroup childGroup = new NioEventLoopGroup();
 
-    public void run(){
-        serverToClient = new ServerToClient(this);
-        outerToServer = new OuterToServer(this);
-
-        serverToClient.start();
-        outerToServer.start();
         try {
-            serverToClient.join();
-            outerToServer.join();
+            ServerBootstrap b = new ServerBootstrap();
+            b.group(parentGroup,childGroup).channel(NioServerSocketChannel.class).option(ChannelOption.SO_BACKLOG,128).childHandler(new MyChannelInitializer());
+            ChannelFuture f = b.bind(7397).sync();
+            f.channel().closeFuture().sync();
         } catch (InterruptedException e) {
             e.printStackTrace();
+        }finally {
+            childGroup.shutdownGracefully();
+            parentGroup.shutdownGracefully();
         }
+
     }
-    public void sendToClient(InputStream inputStream, OutputStream outputStream)
-            throws IOException, InterruptedException {
-        serverToClient.sendToClient(inputStream, outputStream);
-    }
+
 }
