@@ -1,5 +1,6 @@
 package com.zky.client;
 
+import javax.swing.table.TableRowSorter;
 import java.io.*;
 import java.net.Socket;
 import java.util.Map;
@@ -50,7 +51,7 @@ public class ClientProxy {
                             intraSocketMap.remove(uuid);
                             break;
                         }
-                        System.out.print((char) read);
+//                        System.out.print((char) read);
                         outputStream.write(read);
                         outputStream.flush();
                     }
@@ -101,7 +102,16 @@ public class ClientProxy {
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
-                    break;
+                    try {
+                        cmdSocket.close();
+                    } catch (IOException ioException) {
+                        ioException.printStackTrace();
+                    }
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException interruptedException) {
+                        interruptedException.printStackTrace();
+                    }
                 }
             }
         }
@@ -183,7 +193,7 @@ public class ClientProxy {
                         new ClientToServer(uuid).start();
                     }
 
-                    System.out.print((char) read);
+//                    System.out.print((char) read);
                     outputStream.write(read);
                     outputStream.flush();
                 } catch (Exception e) {

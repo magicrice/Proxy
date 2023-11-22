@@ -4,6 +4,7 @@ package com.zky.server;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -59,6 +60,7 @@ public class CMD extends Thread{
 
     public class ClientCmd extends Thread{
         private Socket socket;
+        private String port;
         public ClientCmd(Socket socket){
             this.socket = socket;
         }
@@ -71,7 +73,7 @@ public class CMD extends Thread{
                 System.out.println("要建立的端口"+s);
                 if(s.startsWith("PORT")){
                     String[] split = s.split("-");
-                        String port = split[1].replaceAll("\n", "").replaceAll("\r", "");
+                        port = split[1].replaceAll("\n", "").replaceAll("\r", "");
                         if(clientSocketMap.containsKey(port)){
                             //端口已被占用
                             BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
@@ -85,7 +87,10 @@ public class CMD extends Thread{
                             serverProxy.createOuter(port);
                         }
                 }
-            } catch (IOException e) {
+            }catch (SocketException e){
+                //断线，清除通道
+                serverProxy.clearSocket(port);
+            }catch (IOException e) {
                 e.printStackTrace();
             }
         }

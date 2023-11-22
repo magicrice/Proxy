@@ -88,6 +88,30 @@ public class ServerToClient extends Thread {
         }
     }
 
+    public void clearSocket(String port) {
+        clientSocketMap.forEach((a,b)->{
+            if(a.startsWith(port)){
+                try {
+                    b.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                clientSocketMap.remove(a);
+            }
+        });
+        toOuterMap.forEach((a,b)->{
+            if(a.startsWith(port)){
+                try {
+                    b.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                toOuterMap.remove(a);
+            }
+        });
+
+    }
+
     public class ToOuter extends Thread {
         private Socket socket;
         public ToOuter(Socket socket){
@@ -112,7 +136,6 @@ public class ServerToClient extends Thread {
                 try {
                     read = inputStream.read();
                 } catch (IOException e) {
-                    e.printStackTrace();
                     System.out.println("流关闭");
                     break;
                 }
@@ -147,7 +170,7 @@ public class ServerToClient extends Thread {
                         }
 //                    }
                     try {
-                        System.out.print((char) read);
+//                        System.out.print((char) read);
                         outputStream.write(read);
                         outputStream.flush();
                     } catch (IOException e) {
@@ -190,12 +213,14 @@ public class ServerToClient extends Thread {
                     if (read == -1) {
                         System.out.println("前端流关闭");
                         toOuterMap.remove(uuid);
+                        clientSocketMap.get(uuid).close();
+                        clientSocketMap.remove(uuid);
 //                        uuidSet.remove(uuid);
                         //关闭客户端服务端流
                         break;
                     }
                     if (outputStream != null) {
-                        System.out.print((char) read);
+//                        System.out.print((char) read);
                         outputStream.write(read);
                         outputStream.flush();
                     }

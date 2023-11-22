@@ -52,4 +52,7 @@ public class ServerProxy {
         isClosed = true;
     }
 
+    public void clearSocket(String port) {
+        serverToClient.clearSocket(port);
+    }
 }
