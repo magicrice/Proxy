@@ -23,27 +23,27 @@ public class ServerToClient extends Thread {
     public ServerToClient(ServerProxy serverProxy) {
         this.serverProxy = serverProxy;
     }
-    public String lockSocket(String port){
-        AtomicReference<String> uuid = new AtomicReference<>("");
-        clientSocketMap.forEach((a,b)->{
-            if (!uuidSet.contains(a) && a.startsWith(port)) {
-                uuid.set(a);
-                return;
-            }
-        });
-        Set<String> strings = clientSocketMap.keySet();
-        Set<String> collect = strings.stream().filter(a -> !uuidSet.contains(a)).skip(5).collect(Collectors.toSet());
-        for (String s : collect) {
-            try {
-                clientSocketMap.get(s).close();
-                clientSocketMap.remove(s);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        uuidSet.add(uuid.get());
-        return uuid.get();
-    }
+//    public String lockSocket(String port){
+//        AtomicReference<String> uuid = new AtomicReference<>("");
+//        clientSocketMap.forEach((a,b)->{
+//            if (!uuidSet.contains(a) && a.startsWith(port)) {
+//                uuid.set(a);
+//                return;
+//            }
+//        });
+//        Set<String> strings = clientSocketMap.keySet();
+//        Set<String> collect = strings.stream().filter(a -> !uuidSet.contains(a)).skip(5).collect(Collectors.toSet());
+//        for (String s : collect) {
+//            try {
+//                clientSocketMap.get(s).close();
+//                clientSocketMap.remove(s);
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//        }
+//        uuidSet.add(uuid.get());
+//        return uuid.get();
+//    }
 
     @Override
     public void run() {
@@ -190,7 +190,7 @@ public class ServerToClient extends Thread {
                     if (read == -1) {
                         System.out.println("前端流关闭");
                         toOuterMap.remove(uuid);
-                        uuidSet.remove(uuid);
+//                        uuidSet.remove(uuid);
                         //关闭客户端服务端流
                         break;
                     }

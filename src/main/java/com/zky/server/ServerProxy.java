@@ -38,9 +38,9 @@ public class ServerProxy {
     public void create(String port,String uuid){
         cmd.create(port,uuid);
     }
-    public String lockSocket(String port){
-        return serverToClient.lockSocket(port);
-    }
+//    public String lockSocket(String port){
+//        return serverToClient.lockSocket(port);
+//    }
 
     public void createOuter(String port) {
         outerToServer.createOuter(port);

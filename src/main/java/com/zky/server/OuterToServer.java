@@ -30,13 +30,13 @@ public class OuterToServer {
                 System.out.println("接收到前端信息");
 
                 String uuid = "";
-                uuid = serverProxy.lockSocket(port);
-                if (uuid == null || "".equals(uuid)) {
+//                uuid = serverProxy.lockSocket(port);
+//                if (uuid == null || "".equals(uuid)) {
                     //发送client请求创建通道
                     uuid = port + UUID.randomUUID().toString();
                     serverProxy.create(port, uuid);
                     System.out.println("CMD服务发送给客户端指令创建连接");
-                }
+//                }
                 try {
                     serverProxy.sendToClient(outerSocket, uuid);
                 } catch (InterruptedException e) {
