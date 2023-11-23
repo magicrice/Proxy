@@ -19,7 +19,10 @@ public class ServerProxy {
 
         try {
             ServerBootstrap b = new ServerBootstrap();
-            b.group(parentGroup,childGroup).channel(NioServerSocketChannel.class).option(ChannelOption.SO_BACKLOG,128).childHandler(new MyChannelInitializer());
+            b.group(parentGroup,childGroup).
+                    channel(NioServerSocketChannel.class).
+                    option(ChannelOption.SO_BACKLOG,128).
+                    childHandler(new MyChannelInitializer());
             ChannelFuture f = b.bind(7397).sync();
             f.channel().closeFuture().sync();
         } catch (InterruptedException e) {
