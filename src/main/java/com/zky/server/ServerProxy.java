@@ -12,6 +12,7 @@ public class ServerProxy {
     private Map<String, SocketChannel> clientSocketChannelMap = new ConcurrentHashMap<>();
     private String clientHost = "yunzky";
     private Integer clientPort = 3306;
+    private Integer limit = 1000;
 
     public static void main(String[] args) throws Exception {
         new ServerProxy().run();
@@ -50,7 +51,7 @@ public class ServerProxy {
                     ByteBuffer byteBuffer = ByteBuffer.allocate(1024);
                     int num = 0;
                     boolean flag = false;
-                    while (num <= 5){
+                    while (num <= limit){
                         int read = clientSocketChannelMap.get(uuid).read(byteBuffer);
                         if(read == -1){
                             break;
@@ -80,7 +81,7 @@ public class ServerProxy {
                     ByteBuffer byteBuffer = ByteBuffer.allocate(1024);
                     int num = 0;
                     boolean flag = false;
-                    while (num <= 5) {
+                    while (num <= limit) {
                         int read = socketChannel.read(byteBuffer);
                         if (read == -1) {
                             break;
@@ -109,7 +110,7 @@ public class ServerProxy {
                     ByteBuffer byteBuffer = ByteBuffer.allocate(1024);
                     int num = 0;
                     boolean flag = false;
-                    while (num <= 5) {
+                    while (num <= limit) {
                         try {
                             int read = clientSocketChannelMap.get(sk.attachment().toString()).read(byteBuffer);
                             if (read == -1) {
