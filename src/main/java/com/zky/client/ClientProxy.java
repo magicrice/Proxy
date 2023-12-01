@@ -16,9 +16,9 @@ public class ClientProxy {
     private static String serverIp = "localhost";
     private static List<String> list = new ArrayList<>();
     static {
-        list.add("localhost:3389->7777");
+//        list.add("localhost:3389->7777");
 //        list.add("localhost:8080->7777");
-//        list.add("120.46.189.242:3306->9999");
+        list.add("120.46.189.242:3306->9999");
     }
     private static Integer reConnectTime=5;
 
