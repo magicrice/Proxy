@@ -54,6 +54,7 @@ public class ServerProxy {
                     while (num <= limit){
                         int read = clientSocketChannelMap.get(uuid).read(byteBuffer);
                         if(read == -1){
+                            clientSocketChannelMap.remove(uuid);
                             break;
                         }else if(read == 0) {
                             if(flag){
@@ -83,6 +84,7 @@ public class ServerProxy {
                     boolean flag = false;
                     while (num <= limit) {
                         int read = socketChannel.read(byteBuffer);
+                        System.out.println(read);
                         if (read == -1) {
                             break;
                         } else if (read == 0) {
