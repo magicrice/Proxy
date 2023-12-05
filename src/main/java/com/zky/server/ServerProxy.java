@@ -12,7 +12,7 @@ public class ServerProxy {
     private Map<String, SocketChannel> clientSocketChannelMap = new ConcurrentHashMap<>();
     private String clientHost = "120.46.189.242";
     private Integer clientPort = 3306;
-    private Integer limit = 1000;
+    private Integer limit = 10;
 
     public static void main(String[] args) throws Exception {
         new ServerProxy().run();
