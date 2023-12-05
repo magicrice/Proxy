@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class ServerProxy {
     private Map<String, SocketChannel> clientSocketChannelMap = new ConcurrentHashMap<>();
-    private String clientHost = "yunzky";
+    private String clientHost = "120.46.189.242";
     private Integer clientPort = 3306;
     private Integer limit = 1000;
 
