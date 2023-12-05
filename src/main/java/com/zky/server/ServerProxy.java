@@ -41,6 +41,7 @@ public class ServerProxy {
                     SocketChannel socketChannel = serverSocketChannel.accept();
                     socketChannel.configureBlocking(false);
                     String uuid = UUID.randomUUID().toString();
+                    System.out.println("唯一id为："+uuid);
                     socketChannel.register(selector, SelectionKey.OP_READ, uuid);
 
                     if (!clientSocketChannelMap.containsKey(uuid)) {
@@ -84,7 +85,6 @@ public class ServerProxy {
                     boolean flag = false;
                     while (num <= limit) {
                         int read = socketChannel.read(byteBuffer);
-                        System.out.println(read);
                         if (read == -1) {
                             break;
                         } else if (read == 0) {
@@ -131,12 +131,12 @@ public class ServerProxy {
                             }
                         } catch (Exception e) {
                             e.printStackTrace();
+                            sk.cancel();
                             break;
                         }
                     }
                     clientSocketChannelMap.get(sk.attachment().toString()).close();
                     clientSocketChannelMap.remove(sk.attachment().toString());
-                    sk.cancel();
                 }
                 iterator.remove();
             }
