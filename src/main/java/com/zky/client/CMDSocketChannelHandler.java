@@ -13,12 +13,7 @@ import java.util.Set;
 
 public class CMDSocketChannelHandler extends BaseClientSocketChannelHandler {
 
-    public CMDSocketChannelHandler() {
-    }
 
-    public CMDSocketChannelHandler(List<String> list) {
-        super(list);
-    }
 
     @Override
     public void accept() throws Exception {
@@ -61,24 +56,14 @@ public class CMDSocketChannelHandler extends BaseClientSocketChannelHandler {
             }
         } catch (Exception e) {
             e.printStackTrace();
+            String s = sk.attachment().toString();
+            String[] split = s.split("-");
+            reflections.get(Integer.parseInt(split[1])).setFlag(false);
             sk.cancel();
         }
     }
 
     @Override
     public void write(SelectionKey sk) throws Exception {
-        Set<Integer> integers = reflections.keySet();
-        for (Integer integer : integers) {
-            Reflection reflection = reflections.get(integer);
-            if (!reflection.getFlag()) {
-                SocketChannel socketChannel = (SocketChannel) sk.channel();
-                System.out.println("请求创建对外服务");
-                socketChannel.write(ByteBuffer.wrap(("create-" + reflection.getOutPort() + "-end").getBytes(StandardCharsets.UTF_8)));
-                sk.attach(reflection.getOutPort());
-                sk.interestOps(SelectionKey.OP_READ);
-                reflection.setFlag(true);
-                break;
-            }
-        }
     }
 }

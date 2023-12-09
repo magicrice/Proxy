@@ -4,9 +4,12 @@ package com.zky.client;
 import com.zky.basehandler.BaseClientSocketChannelHandler;
 import com.zky.context.ClientSelectorContext;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -19,13 +22,13 @@ public class ClientProxy extends ClientSelectorContext {
         reflectionLists.add("120.46.189.242:3306->9999");
         reflectionLists.add("localhost:8080->7777");
 
-        handlerMap.put("server", new ServerSocketChannelHandler(reflectionLists));
-        handlerMap.put("beRepresented", new BeRepresentedSocketChannelHandler(reflectionLists));
-        handlerMap.put("cmd", new CMDSocketChannelHandler(reflectionLists));
+        handlerMap.put("server", new ServerSocketChannelHandler());
+        handlerMap.put("beRepresented", new BeRepresentedSocketChannelHandler());
+        handlerMap.put("cmd", new CMDSocketChannelHandler());
     }
 
     public ClientProxy() {
-        start();
+        start(reflectionLists);
     }
 
     public static void main(String[] args) throws Exception {
@@ -34,17 +37,32 @@ public class ClientProxy extends ClientSelectorContext {
 
     public void run() throws Exception {
 
-        //连接cmd
-        for (String reflectionList : reflectionLists) {
-            SocketChannel cmdSocketChannel = SocketChannel.open(new InetSocketAddress("localhost", 9099));
-            cmdSocketChannel.configureBlocking(false);
-            cmdSocketChannel.register(cmdCreateSelector, SelectionKey.OP_WRITE, "cmd-");
-        }
+        /**
+         * client请求server创建cmd通道
+         */
+        new Thread(() -> {
+            while (true) {
+                reflections.forEach((a, b) -> {
+                    try {
+                        if (!b.getFlag()) {
+                            SocketChannel cmdSocketChannel = SocketChannel.open(new InetSocketAddress("localhost", 9099));
+                            cmdSocketChannel.configureBlocking(false);
+                            System.out.println("请求创建对外服务");
+                            cmdSocketChannel.write(ByteBuffer.wrap(("create-" + b.getOutPort() + "-end").getBytes(StandardCharsets.UTF_8)));
+                            cmdSocketChannel.register(cmdCreateSelector, SelectionKey.OP_READ, "cmd-" + a);
+                            b.setFlag(true);
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                });
+            }
+        }).start();
 
         //cmdSelector
         new Thread(() -> {
-            try {
-                while (true) {
+            while (true) {
+                try {
                     int select = cmdCreateSelector.selectNow();
                     if (select == 0) {
                         Thread.sleep(100);
@@ -56,14 +74,12 @@ public class ClientProxy extends ClientSelectorContext {
                         SelectionKey sk = iterator.next();
                         if (sk.isReadable()) {
                             handlerMap.get("cmd").read(sk);
-                        } else if (sk.isWritable()) {
-                            handlerMap.get("cmd").write(sk);
                         }
                         iterator.remove();
                     }
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
             }
         }).start();
 

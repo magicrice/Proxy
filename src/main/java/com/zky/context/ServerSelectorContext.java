@@ -4,13 +4,17 @@ import java.io.IOException;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 public class ServerSelectorContext {
+    public static Integer limit = 2;
    public static Selector acceptSelector = null;
    public static Selector readSelector = null;
    public static Selector writeSelector = null;
    public static Map<String, ServerSocketChannel> serverSocketChannelMap = new ConcurrentHashMap<>();
+    public static Set<String> serverClientChannelFlag = new CopyOnWriteArraySet<>();
 
     public ServerSelectorContext() {
     }

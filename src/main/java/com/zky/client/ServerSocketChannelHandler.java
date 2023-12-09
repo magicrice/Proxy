@@ -11,12 +11,7 @@ import java.util.Iterator;
 import java.util.List;
 
 public class ServerSocketChannelHandler extends BaseClientSocketChannelHandler {
-    public ServerSocketChannelHandler() {
-    }
 
-    public ServerSocketChannelHandler(List<String> list) {
-        super(list);
-    }
 
     @Override
     public void accept() throws Exception {

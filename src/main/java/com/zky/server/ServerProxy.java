@@ -11,9 +11,7 @@ import java.util.*;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 public class ServerProxy extends ServerSelectorContext {
-    public static Integer limit = 2;
     public static Map<String, BaseServerSocketChannelHandler> handlerMap = new HashMap<>();
-    public static Set<String> serverClientChannelFlag = new CopyOnWriteArraySet<>();
 
     static {
         handlerMap.put("client", new ClientServerSocketChannelHandler());

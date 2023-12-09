@@ -11,13 +11,6 @@ import java.util.List;
 
 public class BeRepresentedSocketChannelHandler extends BaseClientSocketChannelHandler {
 
-    public BeRepresentedSocketChannelHandler() {
-
-    }
-
-    public BeRepresentedSocketChannelHandler(List<String> list) {
-        super(list);
-    }
 
     @Override
     public void accept() throws Exception {
