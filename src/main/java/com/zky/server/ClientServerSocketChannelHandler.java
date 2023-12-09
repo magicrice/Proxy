@@ -1,26 +1,30 @@
 package com.zky.server;
 
+import com.zky.basehandler.BaseServerSocketChannelHandler;
+
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ClientServerSocketChannelHandler extends BaseServerSocketChannelHandler {
+    private Map<String, Boolean> map = new ConcurrentHashMap<>();
+
     @Override
-    public void accept(SelectionKey sk, Selector writeSelector, Selector readSelector) throws Exception {
+    public void accept(SelectionKey sk) throws Exception {
         ServerSocketChannel serverSocketChannel = (ServerSocketChannel) sk.channel();
         System.out.println("执行接受方法");
         SocketChannel socketChannel = serverSocketChannel.accept();
         socketChannel.configureBlocking(false);
-        socketChannel.register(readSelector, SelectionKey.OP_READ,"client-");
+        socketChannel.register(readSelector, SelectionKey.OP_READ, "client-");
     }
 
     @Override
-    public boolean read(SelectionKey sk, Selector writeSelector, Selector acceptSelector) throws Exception {
-        boolean flag = false;
+    public void read(SelectionKey sk) throws Exception {
         SocketChannel clientSocketChannel = null;
         if (sk.isReadable()) {
             SocketChannel socketChannel = (SocketChannel) sk.channel();
@@ -39,12 +43,13 @@ public class ClientServerSocketChannelHandler extends BaseServerSocketChannelHan
                             //输出
                             String cmd = new String(byteBuffer.array());
                             if (cmd.startsWith("connect")) {
-                                cmd = cmd.substring(0, 48);
-                                String uuid = cmd.replaceAll("connect-", "").replaceAll("-end", "");
-                                sk.attach("client-" + uuid);
-                                socketChannel.register(writeSelector, SelectionKey.OP_WRITE, "client-" + uuid);
-                                if (cmd.endsWith("end")) {
+                                if (cmd.contains("-end")) {
+                                    cmd = cmd.substring(0, cmd.indexOf("-end"));
+                                    String uuid = cmd.replaceAll("connect-", "");
+                                    sk.attach("client-" + uuid);
+                                    socketChannel.register(writeSelector, SelectionKey.OP_WRITE, "client-" + uuid);
                                     socketChannel.write(ByteBuffer.wrap(("connect-" + uuid + "-success").getBytes(StandardCharsets.UTF_8)));
+                                    ServerProxy.serverClientChannelFlag.add(uuid);
                                     System.out.println("返回客户端通道建立成功");
                                     break;
                                 }
@@ -62,19 +67,16 @@ public class ClientServerSocketChannelHandler extends BaseServerSocketChannelHan
                 int i = writeSelector.selectNow();
                 if (i == 0) {
                     Thread.sleep(100);
-                    return flag;
+                    return;
                 }
                 Iterator<SelectionKey> clientIterator = writeSelector.selectedKeys().iterator();
                 if (!clientIterator.hasNext()) {
-                    return flag;
+                    return;
                 }
                 while (clientIterator.hasNext()) {
                     SelectionKey clientSelectionKey = clientIterator.next();
-                    if (skAttachment.startsWith("client")) {
-                        if (clientSelectionKey.attachment().toString().equals(skAttachment.replaceAll("client-", "out-"))) {
-                            clientSocketChannel = (SocketChannel) clientSelectionKey.channel();
-                            flag = true;
-                        }
+                    if (clientSelectionKey.attachment().toString().equals(skAttachment.replaceAll("client-", "out-"))) {
+                        clientSocketChannel = (SocketChannel) clientSelectionKey.channel();
                     }
                     clientIterator.remove();
                 }
@@ -88,9 +90,10 @@ public class ClientServerSocketChannelHandler extends BaseServerSocketChannelHan
                             //清除writeSelector的通道注册信息
                             System.out.println(writeSelector.selectNow());
                             Iterator<SelectionKey> tmpClientIterator = writeSelector.selectedKeys().iterator();
+                            String uuid = skAttachment.replaceAll("client-", "");
+                            ServerProxy.serverClientChannelFlag.remove(uuid);
                             while (tmpClientIterator.hasNext()) {
                                 SelectionKey next = tmpClientIterator.next();
-                                String uuid = skAttachment.replaceAll("client-", "");
                                 if (!"".equals(uuid)) {
                                     if (next.attachment().toString().endsWith(uuid)) {
                                         next.cancel();
@@ -120,9 +123,10 @@ public class ClientServerSocketChannelHandler extends BaseServerSocketChannelHan
                     //清除writeSelector的通道注册信息
                     System.out.println(writeSelector.selectNow());
                     Iterator<SelectionKey> tmpClientIterator = writeSelector.selectedKeys().iterator();
+                    String uuid = skAttachment.replaceAll("client-", "");
+                    ServerProxy.serverClientChannelFlag.remove(uuid);
                     while (tmpClientIterator.hasNext()) {
                         SelectionKey next = tmpClientIterator.next();
-                        String uuid = skAttachment.replaceAll("client-", "");
                         if (!"".equals(uuid)) {
                             if (next.attachment().toString().endsWith(uuid)) {
                                 next.cancel();
@@ -136,7 +140,6 @@ public class ClientServerSocketChannelHandler extends BaseServerSocketChannelHan
                 }
             }
         }
-        return flag;
     }
 
     @Override

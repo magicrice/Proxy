@@ -1,20 +1,28 @@
 package com.zky.server;
 
 
-import com.zky.client.BaseClientSocketChannelHandler;
+
+import com.zky.basehandler.BaseServerSocketChannelHandler;
+import com.zky.context.ServerSelectorContext;
 
 import java.net.InetSocketAddress;
 import java.nio.channels.*;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 
-public class ServerProxy {
+public class ServerProxy extends ServerSelectorContext {
     public static Integer limit = 2;
-    public static Map<String, BaseServerSocketChannelHandler> handlerMap = new ConcurrentHashMap<>();
+    public static Map<String, BaseServerSocketChannelHandler> handlerMap = new HashMap<>();
+    public static Set<String> serverClientChannelFlag = new CopyOnWriteArraySet<>();
+
     static {
-        handlerMap.put("client",new ClientServerSocketChannelHandler());
-        handlerMap.put("out",new OutServerSocketChannelHandler());
-        handlerMap.put("cmd",new CMDServerSocketChannelHandler());
+        handlerMap.put("client", new ClientServerSocketChannelHandler());
+        handlerMap.put("out", new OutServerSocketChannelHandler());
+        handlerMap.put("cmd", new CMDServerSocketChannelHandler());
+    }
+
+    public ServerProxy() {
+        start();
     }
 
     public static void main(String[] args) throws Exception {
@@ -22,10 +30,6 @@ public class ServerProxy {
     }
 
     public void run() throws Exception {
-
-        Selector acceptSelector = Selector.open();
-        Selector readSelector = Selector.open();
-        Selector writeSelector = Selector.open();
 
         /**
          * 与客户端交互服务
@@ -40,8 +44,6 @@ public class ServerProxy {
         ServerSocketChannel cmdServerSocketChannel = ServerSocketChannel.open();
         cmdServerSocketChannel.configureBlocking(false);
         cmdServerSocketChannel.bind(new InetSocketAddress(9099));
-
-
 
 
         clientServerSocketChannel.register(acceptSelector, SelectionKey.OP_ACCEPT, "client-");
@@ -65,7 +67,7 @@ public class ServerProxy {
                         SelectionKey sk = iterator.next();
                         if (sk.isAcceptable()) {
                             BaseServerSocketChannelHandler socketChannelHandler = handlerMap.get(sk.attachment().toString().substring(0, sk.attachment().toString().indexOf("-")));
-                            socketChannelHandler.accept(sk,writeSelector,readSelector);
+                            socketChannelHandler.accept(sk);
                         }
                         iterator.remove();
                     }
@@ -79,34 +81,27 @@ public class ServerProxy {
          * readSelector
          */
         new Thread(() -> {
-            try {
-                while (true) {
+            while (true) {
+                try {
                     int select = readSelector.selectNow();
                     if (select == 0) {
                         Thread.sleep(100);
                         continue;
                     }
-                    while (true) {
-                        Set<SelectionKey> selectionKeys = readSelector.selectedKeys();
-                        if (selectionKeys.size() == 0) {
-                            break;
+
+                    Set<SelectionKey> selectionKeys = readSelector.selectedKeys();
+                    Iterator<SelectionKey> iterator = selectionKeys.iterator();
+                    while (iterator.hasNext()) {
+                        SelectionKey sk = iterator.next();
+                        if (sk.isReadable()) {
+                            BaseServerSocketChannelHandler socketChannelHandler = handlerMap.get(sk.attachment().toString().substring(0, sk.attachment().toString().indexOf("-")));
+                            socketChannelHandler.read(sk);
                         }
-                        Iterator<SelectionKey> iterator = selectionKeys.iterator();
-                        while (iterator.hasNext()) {
-                            boolean flag = false;
-                            SelectionKey sk = iterator.next();
-                            if (sk.isReadable()) {
-                                BaseServerSocketChannelHandler socketChannelHandler = handlerMap.get(sk.attachment().toString().substring(0, sk.attachment().toString().indexOf("-")));
-                                flag = socketChannelHandler.read(sk,writeSelector,acceptSelector);
-                            }
-                            if (flag) {
-                                iterator.remove();
-                            }
-                        }
+                        iterator.remove();
                     }
-                }
             } catch (Exception e) {
                 e.printStackTrace();
+            }
             }
         }).start();
     }

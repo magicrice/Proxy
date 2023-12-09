@@ -1,22 +1,31 @@
 package com.zky.client;
 
 
-import java.net.InetSocketAddress;
+import com.zky.basehandler.BaseClientSocketChannelHandler;
+
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
+import java.util.List;
 
 public class BeRepresentedSocketChannelHandler extends BaseClientSocketChannelHandler {
+
+    public BeRepresentedSocketChannelHandler() {
+
+    }
+
+    public BeRepresentedSocketChannelHandler(List<String> list) {
+        super(list);
+    }
+
     @Override
     public void accept() throws Exception {
 
     }
 
     @Override
-    public boolean read(SelectionKey sk, Selector readSelector, Selector writeSelector) throws Exception {
-        boolean flag = false;
+    public void read(SelectionKey sk) throws Exception {
         SocketChannel socketChannel = (SocketChannel) sk.channel();
         SocketChannel clientSocketChannel = null;
         String skAttachment = sk.attachment().toString();
@@ -24,18 +33,18 @@ public class BeRepresentedSocketChannelHandler extends BaseClientSocketChannelHa
         int i = writeSelector.selectNow();
         if (i == 0) {
             Thread.sleep(100);
-            return flag;
+            return;
         }
         Iterator<SelectionKey> clientIterator = writeSelector.selectedKeys().iterator();
         if (!clientIterator.hasNext()) {
-            return flag;
+            return;
         }
         while (clientIterator.hasNext()) {
             SelectionKey clientSelectionKey = clientIterator.next();
-            if (skAttachment.startsWith("beRepresented-")) {
-                if (clientSelectionKey.attachment().toString().equals(skAttachment.replaceAll("beRepresented-", "server-"))) {
+            if (clientSelectionKey.attachment().toString().equals(skAttachment.replaceAll("beRepresented-", "server-"))) {
+                String uuid = skAttachment.replaceAll("beRepresented-", "");
+                if(clientServerChannelFlag.contains(uuid)){
                     clientSocketChannel = (SocketChannel) clientSelectionKey.channel();
-                    flag = true;
                 }
             }
             clientIterator.remove();
@@ -43,34 +52,17 @@ public class BeRepresentedSocketChannelHandler extends BaseClientSocketChannelHa
         System.out.println("通道：" + skAttachment);
         if (clientSocketChannel == null || !clientSocketChannel.isConnected()) {
             System.out.println("服务端通道已关闭");
-            return flag;
+            return;
         }
 
         System.out.println("执行读方法");
         System.out.println(sk.attachment());
         int num = 0;
         try {
-            while (num <= ClientProxy.limit) {
+            while (num <= limit) {
                 int read = socketChannel.read(byteBuffer);
                 if (read == -1) {
                     sk.cancel();
-                    //server通道关闭代表整个流程结束
-                    if (skAttachment.startsWith("server-")) {
-                        System.out.println(writeSelector.selectNow());
-                        Iterator<SelectionKey> tmpClientIterator = writeSelector.selectedKeys().iterator();
-                        while (tmpClientIterator.hasNext()) {
-                            SelectionKey next = tmpClientIterator.next();
-                            String uuid = skAttachment.replaceAll("beRepresented-", "");
-                            if (!"".equals(uuid)) {
-                                if (next.attachment().toString().endsWith(uuid)) {
-                                    next.cancel();
-                                    next.channel().close();
-                                    System.out.println(next.attachment() + "通道关闭");
-                                }
-                            }
-                            tmpClientIterator.remove();
-                        }
-                    }
                     System.out.println(skAttachment + "通道-1已关闭");
                     break;
                 } else if (read == 0) {
@@ -87,22 +79,8 @@ public class BeRepresentedSocketChannelHandler extends BaseClientSocketChannelHa
         } catch (Exception e) {
             e.printStackTrace();
             sk.cancel();
-            //server通道关闭代表整个流程结束
-            System.out.println(writeSelector.selectNow());
-            Iterator<SelectionKey> tmpClientIterator = writeSelector.selectedKeys().iterator();
-            while (tmpClientIterator.hasNext()) {
-                SelectionKey next = tmpClientIterator.next();
-                String uuid = skAttachment.replaceAll("beRepresented-", "");
-                if (!"".equals(uuid)) {
-                    if (next.attachment().toString().endsWith(uuid)) {
-                        next.cancel();
-                    }
-                }
-                tmpClientIterator.remove();
-            }
             System.out.println(skAttachment + "通道异常已关闭");
         }
-        return flag;
     }
 
     @Override

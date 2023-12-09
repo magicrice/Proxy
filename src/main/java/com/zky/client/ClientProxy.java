@@ -1,52 +1,51 @@
 package com.zky.client;
 
 
-
-import com.zky.server.BaseServerSocketChannelHandler;
+import com.zky.basehandler.BaseClientSocketChannelHandler;
+import com.zky.context.ClientSelectorContext;
 
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-import java.nio.charset.StandardCharsets;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 
-public class ClientProxy {
+public class ClientProxy extends ClientSelectorContext {
 
-    public static Integer limit = 2;
-    public static String clientHost = "120.46.189.242";
-//        public static String clientHost = "localhost";
-    public static Integer clientPort = 3306;
-//        public static Integer clientPort = 8080;
-    public static Map<String, BaseClientSocketChannelHandler> handlerMap = new ConcurrentHashMap<>();
+    public static Map<String, BaseClientSocketChannelHandler> handlerMap = new HashMap<>();
+    public static List<String> reflectionLists = new CopyOnWriteArrayList<>();
+
     static {
-        handlerMap.put("server",new ServerSocketChannelHandler());
-        handlerMap.put("beRepresented",new BeRepresentedSocketChannelHandler());
-        handlerMap.put("cmd",new CMDSocketChannelHandler());
+        reflectionLists.add("120.46.189.242:3306->9999");
+        reflectionLists.add("localhost:8080->7777");
+
+        handlerMap.put("server", new ServerSocketChannelHandler(reflectionLists));
+        handlerMap.put("beRepresented", new BeRepresentedSocketChannelHandler(reflectionLists));
+        handlerMap.put("cmd", new CMDSocketChannelHandler(reflectionLists));
+    }
+
+    public ClientProxy() {
+        start();
     }
 
     public static void main(String[] args) throws Exception {
         new ClientProxy().run();
     }
+
     public void run() throws Exception {
-        Selector cmdCreateSelector = Selector.open();
-        Selector readSelector = Selector.open();
-        Selector writeSelector = Selector.open();
 
         //连接cmd
-        SocketChannel cmdSocketChannel = SocketChannel.open(new InetSocketAddress("localhost", 9099));
-        cmdSocketChannel.configureBlocking(false);
-        cmdSocketChannel.register(cmdCreateSelector,SelectionKey.OP_WRITE,"cmd-");
+        for (String reflectionList : reflectionLists) {
+            SocketChannel cmdSocketChannel = SocketChannel.open(new InetSocketAddress("localhost", 9099));
+            cmdSocketChannel.configureBlocking(false);
+            cmdSocketChannel.register(cmdCreateSelector, SelectionKey.OP_WRITE, "cmd-");
+        }
 
         //cmdSelector
-        new Thread(()->{
+        new Thread(() -> {
             try {
                 while (true) {
-                    int select = cmdCreateSelector.select();
+                    int select = cmdCreateSelector.selectNow();
                     if (select == 0) {
                         Thread.sleep(100);
                         continue;
@@ -56,8 +55,8 @@ public class ClientProxy {
                     while (iterator.hasNext()) {
                         SelectionKey sk = iterator.next();
                         if (sk.isReadable()) {
-                            handlerMap.get("cmd").read(sk,readSelector,writeSelector);
-                        }else if(sk.isWritable()){
+                            handlerMap.get("cmd").read(sk);
+                        } else if (sk.isWritable()) {
                             handlerMap.get("cmd").write(sk);
                         }
                         iterator.remove();
@@ -80,23 +79,15 @@ public class ClientProxy {
                         Thread.sleep(100);
                         continue;
                     }
-                    while (true) {
-                        Set<SelectionKey> selectionKeys = readSelector.selectedKeys();
-                        if (selectionKeys.size() == 0) {
-                            break;
+                    Set<SelectionKey> selectionKeys = readSelector.selectedKeys();
+                    Iterator<SelectionKey> iterator = selectionKeys.iterator();
+                    while (iterator.hasNext()) {
+                        SelectionKey sk = iterator.next();
+                        if (sk.isReadable()) {
+                            BaseClientSocketChannelHandler socketChannelHandler = handlerMap.get(sk.attachment().toString().substring(0, sk.attachment().toString().indexOf("-")));
+                            socketChannelHandler.read(sk);
                         }
-                        Iterator<SelectionKey> iterator = selectionKeys.iterator();
-                        while (iterator.hasNext()) {
-                            boolean flag = false;
-                            SelectionKey sk = iterator.next();
-                            if (sk.isReadable()) {
-                                BaseClientSocketChannelHandler socketChannelHandler = handlerMap.get(sk.attachment().toString().substring(0, sk.attachment().toString().indexOf("-")));
-                                flag = socketChannelHandler.read(sk,readSelector,writeSelector);
-                            }
-                            if (flag) {
-                                iterator.remove();
-                            }
-                        }
+                        iterator.remove();
                     }
                 }
             } catch (Exception e) {

@@ -1,29 +1,39 @@
 package com.zky.client;
 
 
+import com.zky.basehandler.BaseClientSocketChannelHandler;
+
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
+import java.util.List;
 
 public class ServerSocketChannelHandler extends BaseClientSocketChannelHandler {
+    public ServerSocketChannelHandler() {
+    }
+
+    public ServerSocketChannelHandler(List<String> list) {
+        super(list);
+    }
+
     @Override
     public void accept() throws Exception {
 
     }
 
     @Override
-    public boolean read(SelectionKey sk, Selector readSelector, Selector writeSelector) throws Exception {
-        boolean flag = false;
+    public void read(SelectionKey sk) throws Exception {
         SocketChannel socketChannel = (SocketChannel) sk.channel();
         SocketChannel clientSocketChannel = null;
-        if (sk.attachment() == null || "server-".endsWith(sk.attachment().toString())) {
-            ByteBuffer byteBuffer = ByteBuffer.allocate(1024);
+        if (sk.attachment() == null || (sk.attachment().toString().startsWith("server-") && sk.attachment().toString().endsWith("-"))) {
+            String substring = sk.attachment().toString().substring(0, sk.attachment().toString().lastIndexOf("-"));
+            String[] split = substring.split("-");
+            ByteBuffer byteBuffer = ByteBuffer.allocate(53+split[1].length());
             int num = 0;
             try {
-                while (num <= ClientProxy.limit) {
+                while (num <= limit) {
                     int read = socketChannel.read(byteBuffer);
                     if (read == -1) {
                         break;
@@ -34,18 +44,25 @@ public class ServerSocketChannelHandler extends BaseClientSocketChannelHandler {
                         //输出
                         String s = new String(byteBuffer.array());
                         if (s.startsWith("connect")) {
-                            s = s.substring(0, 52);
-                            String uuid = s.replaceAll("connect-", "").replaceAll("-success", "");
-                            if (s.endsWith("success")) {
+                            if (s.contains("-success")) {
+                                s = s.substring(0, s.indexOf("-success"));
+                                String uuid = s.replaceAll("connect-", "");
                                 System.out.println("通道建立成功");
                                 sk.attach("server-" + uuid);
-                                socketChannel.register(writeSelector, SelectionKey.OP_WRITE, "server-" + uuid);
+                                clientServerChannelFlag.add(uuid);
+
                                 //创建通道 连接被代理端
-                                SocketChannel beRepresentedSocketChannel = SocketChannel.open(new InetSocketAddress(ClientProxy.clientHost, ClientProxy.clientPort));
-                                beRepresentedSocketChannel.configureBlocking(false);
-                                beRepresentedSocketChannel.register(readSelector, SelectionKey.OP_READ, "beRepresented-" + uuid);
-                                beRepresentedSocketChannel.register(writeSelector, SelectionKey.OP_WRITE, "beRepresented-" + uuid);
-                                break;
+                                System.out.println("创建被代理端通道");
+                                String port = uuid.substring(0, uuid.indexOf("-"));
+                                if (reflections.containsKey(Integer.parseInt(port))) {
+                                    Reflection reflection = reflections.get(Integer.parseInt(port));
+                                    SocketChannel beRepresentedSocketChannel = SocketChannel.open(new InetSocketAddress(reflection.getBeRepresentedIp(), reflection.getBeRepresentedPort()));
+                                    beRepresentedSocketChannel.configureBlocking(false);
+                                    beRepresentedSocketChannel.register(readSelector, SelectionKey.OP_READ, "beRepresented-" + uuid);
+                                    beRepresentedSocketChannel.register(writeSelector, SelectionKey.OP_WRITE, "beRepresented-" + uuid);
+                                    System.out.println("被代理端通道创建成功");
+                                    break;
+                                }
                             }
                         }
                         byteBuffer.clear();
@@ -61,61 +78,61 @@ public class ServerSocketChannelHandler extends BaseClientSocketChannelHandler {
             int i = writeSelector.selectNow();
             if (i == 0) {
                 Thread.sleep(100);
-                return flag;
+                return;
             }
             Iterator<SelectionKey> clientIterator = writeSelector.selectedKeys().iterator();
             if (!clientIterator.hasNext()) {
-                return flag;
+                return;
             }
             while (clientIterator.hasNext()) {
                 SelectionKey clientSelectionKey = clientIterator.next();
-                if (skAttachment.startsWith("server-")) {
-                    if (clientSelectionKey.attachment().toString().equals(skAttachment.replaceAll("server-", "beRepresented-"))) {
-                        clientSocketChannel = (SocketChannel) clientSelectionKey.channel();
-                        flag = true;
-                    }
+                if (clientSelectionKey.attachment().toString().equals(skAttachment.replaceAll("server-", "beRepresented-"))) {
+                    clientSocketChannel = (SocketChannel) clientSelectionKey.channel();
                 }
                 clientIterator.remove();
             }
-            if (skAttachment.startsWith("server-")) {
-                if (clientSocketChannel == null || !clientSocketChannel.isConnected()) {
-                    clientSocketChannel = SocketChannel.open(new InetSocketAddress(ClientProxy.clientHost, ClientProxy.clientPort));
+
+            if (clientSocketChannel == null || !clientSocketChannel.isConnected()) {
+                String s = skAttachment.replaceAll("server-", "");
+                String port = s.substring(0, s.indexOf("-"));
+                if (reflections.containsKey(Integer.parseInt(port))) {
+                    Reflection reflection = reflections.get(Integer.parseInt(port));
+                    clientSocketChannel = SocketChannel.open(new InetSocketAddress(reflection.getBeRepresentedIp(), reflection.getBeRepresentedPort()));
                     clientSocketChannel.configureBlocking(false);
-                    clientSocketChannel.register(writeSelector, SelectionKey.OP_WRITE, "beRepresented-" + skAttachment.replaceAll("server-", ""));
-                    clientSocketChannel.register(readSelector, SelectionKey.OP_READ, "beRepresented-" + skAttachment.replaceAll("server-", ""));
-                    flag = true;
+                    clientSocketChannel.register(writeSelector, SelectionKey.OP_WRITE, skAttachment.replaceAll("server-", "beRepresented-"));
+                    clientSocketChannel.register(readSelector, SelectionKey.OP_READ, skAttachment.replaceAll("server-", "beRepresented-"));
                 }
             }
+
             System.out.println("通道：" + skAttachment);
             if (clientSocketChannel == null || !clientSocketChannel.isConnected()) {
                 System.out.println("被代理服务通道已关闭");
-                return flag;
+                return;
             }
 
             System.out.println("执行读方法");
             System.out.println(sk.attachment());
             int num = 0;
             try {
-                while (num <= ClientProxy.limit) {
+                while (num <= limit) {
                     int read = socketChannel.read(byteBuffer);
                     if (read == -1) {
                         sk.cancel();
                         //server通道关闭代表整个流程结束
-                        if (skAttachment.startsWith("server-")) {
-                            System.out.println(writeSelector.selectNow());
-                            Iterator<SelectionKey> tmpClientIterator = writeSelector.selectedKeys().iterator();
-                            while (tmpClientIterator.hasNext()) {
-                                SelectionKey next = tmpClientIterator.next();
-                                String uuid = skAttachment.replaceAll("server-", "");
-                                if (!"".equals(uuid)) {
-                                    if (next.attachment().toString().endsWith(uuid)) {
-                                        next.cancel();
-                                        next.channel().close();
-                                        System.out.println(next.attachment() + "通道关闭");
-                                    }
+                        System.out.println(writeSelector.selectNow());
+                        Iterator<SelectionKey> tmpClientIterator = writeSelector.selectedKeys().iterator();
+                        String uuid = skAttachment.replaceAll("server-", "");
+                        clientServerChannelFlag.remove(uuid);
+                        while (tmpClientIterator.hasNext()) {
+                            SelectionKey next = tmpClientIterator.next();
+                            if (!"".equals(uuid)) {
+                                if (next.attachment().toString().endsWith(uuid)) {
+                                    next.cancel();
+                                    next.channel().close();
+                                    System.out.println(next.attachment() + "通道关闭");
                                 }
-                                tmpClientIterator.remove();
                             }
+                            tmpClientIterator.remove();
                         }
                         System.out.println(skAttachment + "通道-1已关闭");
                         break;
@@ -136,9 +153,10 @@ public class ServerSocketChannelHandler extends BaseClientSocketChannelHandler {
                 //server通道关闭代表整个流程结束
                 System.out.println(writeSelector.selectNow());
                 Iterator<SelectionKey> tmpClientIterator = writeSelector.selectedKeys().iterator();
+                String uuid = skAttachment.replaceAll("server-", "");
+                clientServerChannelFlag.remove(uuid);
                 while (tmpClientIterator.hasNext()) {
                     SelectionKey next = tmpClientIterator.next();
-                    String uuid = skAttachment.replaceAll("server-", "");
                     if (!"".equals(uuid)) {
                         if (next.attachment().toString().endsWith(uuid)) {
                             next.cancel();
@@ -149,7 +167,6 @@ public class ServerSocketChannelHandler extends BaseClientSocketChannelHandler {
                 System.out.println(skAttachment + "通道异常已关闭");
             }
         }
-        return flag;
     }
 
     @Override
