@@ -11,12 +11,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 public class ClientSelectorContext {
-    public static Selector cmdCreateSelector = null;
     public static Selector readSelector = null;
     public static Selector writeSelector = null;
     public static Set<String> clientServerChannelFlag = new CopyOnWriteArraySet<>();
     public static Integer limit = 2;
     public static Map<Integer, Reflection> reflections = new ConcurrentHashMap<>();
+    protected static String serverIp = "localhost";
 
     public ClientSelectorContext() {
 
@@ -31,7 +31,6 @@ public class ClientSelectorContext {
 
     public void start(List<String> list){
         try {
-            cmdCreateSelector = Selector.open();
             readSelector = Selector.open();
             writeSelector = Selector.open();
             for (String s : list) {

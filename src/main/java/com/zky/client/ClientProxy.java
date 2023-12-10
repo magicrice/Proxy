@@ -45,11 +45,11 @@ public class ClientProxy extends ClientSelectorContext {
                 reflections.forEach((a, b) -> {
                     try {
                         if (!b.getFlag()) {
-                            SocketChannel cmdSocketChannel = SocketChannel.open(new InetSocketAddress("localhost", 9099));
+                            SocketChannel cmdSocketChannel = SocketChannel.open(new InetSocketAddress(serverIp, 9099));
                             cmdSocketChannel.configureBlocking(false);
                             System.out.println("请求创建对外服务");
                             cmdSocketChannel.write(ByteBuffer.wrap(("create-" + b.getOutPort() + "-end").getBytes(StandardCharsets.UTF_8)));
-                            cmdSocketChannel.register(cmdCreateSelector, SelectionKey.OP_READ, "cmd-" + a);
+                            cmdSocketChannel.register(readSelector, SelectionKey.OP_READ, "cmd-" + a);
                             b.setFlag(true);
                         }
                     } catch (IOException e) {
@@ -59,29 +59,6 @@ public class ClientProxy extends ClientSelectorContext {
             }
         }).start();
 
-        //cmdSelector
-        new Thread(() -> {
-            while (true) {
-                try {
-                    int select = cmdCreateSelector.selectNow();
-                    if (select == 0) {
-                        Thread.sleep(100);
-                        continue;
-                    }
-                    Set<SelectionKey> selectionKeys = cmdCreateSelector.selectedKeys();
-                    Iterator<SelectionKey> iterator = selectionKeys.iterator();
-                    while (iterator.hasNext()) {
-                        SelectionKey sk = iterator.next();
-                        if (sk.isReadable()) {
-                            handlerMap.get("cmd").read(sk);
-                        }
-                        iterator.remove();
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }).start();
 
 
         /**

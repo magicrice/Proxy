@@ -8,8 +8,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Set;
 
 public class CMDSocketChannelHandler extends BaseClientSocketChannelHandler {
 
@@ -40,7 +38,7 @@ public class CMDSocketChannelHandler extends BaseClientSocketChannelHandler {
                         cmd = cmd.substring(0, cmd.indexOf("-end"));
                         String uuid = cmd.replaceAll("connect-", "");
                         //创建通道 连接server
-                        SocketChannel serverSocketChannel = SocketChannel.open(new InetSocketAddress("localhost", 8088));
+                        SocketChannel serverSocketChannel = SocketChannel.open(new InetSocketAddress(serverIp, 8088));
                         serverSocketChannel.configureBlocking(false);
                         //发送唯一id消息
                         serverSocketChannel.write(ByteBuffer.wrap(("connect-" + uuid + "-end").getBytes(StandardCharsets.UTF_8)));
