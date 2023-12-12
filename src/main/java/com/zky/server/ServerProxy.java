@@ -1,15 +1,15 @@
 package com.zky.server;
 
 
+import com.zky.initializer.ClientServerChannelInitializer;
+import com.zky.initializer.OutChannelInitializer;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 
 public class ServerProxy {
 
@@ -22,14 +22,41 @@ public class ServerProxy {
             b.group(parentGroup,childGroup).
                     channel(NioServerSocketChannel.class).
                     option(ChannelOption.SO_BACKLOG,128).
-                    childHandler(new MyChannelInitializer());
-            ChannelFuture f = b.bind(7397).sync();
-            f.channel().closeFuture().sync();
+                    childHandler(new OutChannelInitializer());
+            ChannelFuture f = b.bind(9999).sync();
+            System.out.println("server start done");
+            ChannelFuture channelFuture = f.channel().closeFuture();
+            channelFuture.addListener(new ChannelFutureListener() {
+                @Override
+                public void operationComplete(ChannelFuture channelFuture) throws Exception {
+                    System.out.println("9999服务下线");
+                    childGroup.shutdownGracefully();
+                    parentGroup.shutdownGracefully();
+                }
+            });
         } catch (InterruptedException e) {
             e.printStackTrace();
-        }finally {
-            childGroup.shutdownGracefully();
-            parentGroup.shutdownGracefully();
+        }
+
+        try {
+            ServerBootstrap b = new ServerBootstrap();
+            b.group(parentGroup,childGroup).
+                    channel(NioServerSocketChannel.class).
+                    option(ChannelOption.SO_BACKLOG,128).
+                    childHandler(new ClientServerChannelInitializer());
+            ChannelFuture f = b.bind(8088).sync();
+            System.out.println("server start done");
+            ChannelFuture channelFuture = f.channel().closeFuture();
+            channelFuture.addListener(new ChannelFutureListener() {
+                @Override
+                public void operationComplete(ChannelFuture channelFuture) throws Exception {
+                    System.out.println("9999服务下线");
+                    childGroup.shutdownGracefully();
+                    parentGroup.shutdownGracefully();
+                }
+            });
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
 
     }
