@@ -1,4 +1,4 @@
-package com.zky.client;
+package com.zky.utils;
 
 import com.zky.utils.SerializationUtil;
 import io.netty.buffer.ByteBuf;

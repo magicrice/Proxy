@@ -9,7 +9,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class ServerChannelHandler {
     //client与server通道
-    public static ChannelGroup channelGroup = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
+//    public static ChannelGroup channelGroup = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
+    public static Map<String,ChannelGroup> channelGroup = new ConcurrentHashMap<>();
 
     //web访问通道 key为id value为通道
     public static Map<String,ChannelGroup> channelGroupMap = new ConcurrentHashMap<>();

@@ -1,12 +1,18 @@
 package com.zky.initializer;
 
-import com.zky.handler.MyServerHandler;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.bytes.ByteArrayDecoder;
 import io.netty.handler.codec.bytes.ByteArrayEncoder;
 
-public class OutChannelInitializer extends ChannelInitializer<SocketChannel> {
+public class ByteChannelInitializer extends ChannelInitializer<SocketChannel> {
+    private ChannelInboundHandlerAdapter channelInboundHandlerAdapter;
+
+    public ByteChannelInitializer(ChannelInboundHandlerAdapter channelInboundHandlerAdapter) {
+        this.channelInboundHandlerAdapter = channelInboundHandlerAdapter;
+    }
+
     @Override
     protected void initChannel(SocketChannel channel) throws Exception {
         /**
@@ -18,12 +24,10 @@ public class OutChannelInitializer extends ChannelInitializer<SocketChannel> {
         //基于最大长度
 //        channel.pipeline().addLast(new FixedLengthFrameDecoder(4));
         //解码转String,注意调整自己的编码格式GBK、UTF-8
-//        channel.pipeline().addLast(new StringDecoder(Charset.forName("UTF-8")));
         channel.pipeline().addLast(new ByteArrayDecoder());
         //编码转string
-//        channel.pipeline().addLast(new StringEncoder(Charset.forName("UTF-8")));
         channel.pipeline().addLast(new ByteArrayEncoder());
         //在管道中添加我们自己的接收数据实现方法
-        channel.pipeline().addLast(new MyServerHandler());
+        channel.pipeline().addLast(channelInboundHandlerAdapter);
     }
 }
