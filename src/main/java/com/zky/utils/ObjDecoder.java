@@ -17,6 +17,7 @@ public class ObjDecoder extends ByteToMessageDecoder {
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
+        System.out.println("要解析数量："+in.readableBytes());
         if (in.readableBytes() < 4) {
             return;
         }

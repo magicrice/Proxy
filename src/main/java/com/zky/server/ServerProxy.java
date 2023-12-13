@@ -36,12 +36,12 @@ public class ServerProxy {
                     option(ChannelOption.SO_BACKLOG,128).
                     childHandler(new ProtoBuffChannelInitializer(new ServerHandler()));
             ChannelFuture f = b.bind(8088).sync();
-            System.out.println("server start done");
+            System.out.println("8088 server start done");
             ChannelFuture channelFuture = f.channel().closeFuture();
             channelFuture.addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(ChannelFuture channelFuture) throws Exception {
-                    System.out.println("9999服务下线");
+                    System.out.println("8088服务下线");
                     childGroup.shutdownGracefully();
                     parentGroup.shutdownGracefully();
                 }

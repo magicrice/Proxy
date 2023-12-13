@@ -13,6 +13,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.GlobalEventExecutor;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -40,17 +41,20 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
             //通知服务端创建对外服务
             DefaultChannelGroup defaultChannelGroup = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
             defaultChannelGroup.add(channel);
-            while (true){
-                String port = (String) channel.attr(AttributeKey.valueOf("port")).get();
-                if(port == null || "".equals(port)){
+            String port = "";
+            while (true) {
+                port = (String) channel.attr(AttributeKey.valueOf("port")).get();
+                if (port == null || "".equals(port)) {
                     continue;
+                }else {
+                    break;
                 }
-                System.out.println("port为："+port);
-                ClientChannelHandler.channelGroup.put(port, defaultChannelGroup);
-                System.out.println("通知服务端创建对外服务");
-                ctx.writeAndFlush(MsgUtil.buildMsg(1, null, port, 0, null));
-                break;
             }
+            System.out.println("port为：" + port);
+            ClientChannelHandler.channelGroup.put(port, defaultChannelGroup);
+            System.out.println("通知服务端创建对外服务");
+            ctx.writeAndFlush(MsgUtil.buildMsg(1, null, port, 0,null));
+            System.out.println("消息发送完毕");
         }
     }
 
@@ -69,6 +73,7 @@ public class ClientInHandler extends ChannelInboundHandlerAdapter {
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         //接收msg消息
         SocketChannel ctxChannel = (SocketChannel) ctx.channel();
+        System.out.println("收到服务器消息");
 
         if (ctxChannel.remoteAddress().getPort() == 8088) {
             MsgInfo msgInfo = (MsgInfo) msg;

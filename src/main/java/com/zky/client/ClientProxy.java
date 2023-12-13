@@ -17,8 +17,8 @@ public class ClientProxy {
     public static AttributeKey<Object> uuid = AttributeKey.newInstance("uuid");
 
     public static void main(String[] args) {
-        EventLoopGroup workerGroup = new NioEventLoopGroup();
         for (String port : ClientInHandler.reflectionLists.keySet()) {
+            EventLoopGroup workerGroup = new NioEventLoopGroup();
             try {
                 Bootstrap bootstrap = new Bootstrap();
                 bootstrap.group(workerGroup).

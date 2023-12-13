@@ -11,7 +11,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SerializationUtil {
 
     private static Map<Class<?>, Schema<?>> cachedSchema = new ConcurrentHashMap<>();
-    private static LinkedBuffer buffer = LinkedBuffer.allocate(LinkedBuffer.DEFAULT_BUFFER_SIZE);
 
 
     private SerializationUtil() {
@@ -26,10 +25,12 @@ public class SerializationUtil {
      */
     public static <T> byte[] serialize(T obj) {
         Class<T> cls = (Class<T>) obj.getClass();
+        LinkedBuffer buffer = LinkedBuffer.allocate(LinkedBuffer.DEFAULT_BUFFER_SIZE);
         try {
             Schema<T> schema = getSchema(cls);
             return ProtostuffIOUtil.toByteArray(obj, schema, buffer);
         } catch (Exception e) {
+            e.printStackTrace();
             throw new IllegalStateException(e.getMessage(), e);
         } finally {
             buffer.clear();

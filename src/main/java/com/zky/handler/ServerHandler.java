@@ -34,18 +34,18 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
         System.out.println("链接报告port:" + channel.localAddress().getPort());
         System.out.println("链接报告完闭");
         //通知客户端连接建立成功
-        DefaultChannelGroup defaultChannelGroup = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
-        defaultChannelGroup.add(channel);
         if (channel.localAddress().getPort() == 8088) {
 //            ServerChannelHandler.channelGroup.put();add(channel);
         } else {
+            DefaultChannelGroup defaultChannelGroup = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
+            defaultChannelGroup.add(channel);
             String uuid = UUID.randomUUID().toString();
             String port = String.valueOf(channel.localAddress().getPort());
             ServerChannelHandler.channelGroupMap.put(uuid, defaultChannelGroup);
             channel.attr(AttributeKey.valueOf("uuid")).set(uuid);
             channel.attr(AttributeKey.valueOf("port")).set(port);
             //通知client连接被代理端
-            ServerChannelHandler.channelGroup.get(port).writeAndFlush(MsgUtil.buildMsg(2, uuid,port,0, null));
+            ServerChannelHandler.channelGroup.get(port).writeAndFlush(MsgUtil.buildMsg(2, uuid, port, 0, null));
         }
 
     }
@@ -59,12 +59,20 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
             String uuid = (String) ctxChannel.attr(AttributeKey.valueOf("uuid")).get();
             ServerChannelHandler.channelGroupMap.remove(uuid);
         }
+        if (ctxChannel.localAddress().getPort() == 8088) {
+            String port = (String) ctxChannel.attr(AttributeKey.valueOf("port")).get();
+            System.out.println("端口:"+port);
+            ServerProxy.hasOutServerSocketChannel.get(port).close();
+            ServerProxy.hasOutServerSocketChannel.remove(port);
+        }
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         //接收msg消息
         SocketChannel channel = (SocketChannel) ctx.channel();
+        System.out.println("local地址为：" + channel.localAddress().getHostString() + "->" + channel.localAddress().getPort());
+        System.out.println("remote地址为：" + channel.remoteAddress().getHostString() + "->" + channel.remoteAddress().getPort());
         if (channel.localAddress().getPort() == 8088) {
             MsgInfo msgInfo = (MsgInfo) msg;
             if (3 == msgInfo.getType()) {
@@ -74,6 +82,9 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
                 }
             } else if (1 == msgInfo.getType()) {
                 //创建对外服务
+                //通道绑定ip
+                channel.attr(AttributeKey.valueOf("port")).set(msgInfo.getPort());
+
                 System.out.println("创建对外服务");
                 DefaultChannelGroup defaultChannelGroup = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
                 defaultChannelGroup.add(channel);
@@ -103,7 +114,7 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
             System.out.println("请求信息:" + new String((byte[]) msg));
             String uuid = (String) channel.attr(AttributeKey.valueOf("uuid")).get();
             String port = String.valueOf(channel.localAddress().getPort());
-            ServerChannelHandler.channelGroup.get(port).writeAndFlush(MsgUtil.buildMsg(3, uuid,port, ((byte[]) msg).length, (byte[]) msg));
+            ServerChannelHandler.channelGroup.get(port).writeAndFlush(MsgUtil.buildMsg(3, uuid, port, ((byte[]) msg).length, (byte[]) msg));
         }
 
     }
@@ -134,6 +145,11 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
         if (ctxChannel.hasAttr(AttributeKey.valueOf("uuid"))) {
             String uuid = (String) ctxChannel.attr(AttributeKey.valueOf("uuid")).get();
             ServerChannelHandler.channelGroupMap.remove(uuid);
+        }
+        if (ctxChannel.localAddress().getPort() == 8088) {
+            String port = (String) ctxChannel.attr(AttributeKey.valueOf("port")).get();
+            ServerProxy.hasOutServerSocketChannel.get(port).close();
+            ServerProxy.hasOutServerSocketChannel.remove(port);
         }
         ctx.close();
         System.out.println("异常信息:\r\n" + cause.getMessage());
